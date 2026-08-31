@@ -9,11 +9,12 @@ Usar `nikoo978's Project` (`ubfqwmhxkjtqdcfnsmwe`).
 - Auth: `@supabase/supabase-js` con email/contraseña.
 - Sesión: gestionada exclusivamente por Supabase (`getSession` + `onAuthStateChange`).
 - Recuperación: `resetPasswordForEmail` y pantalla para establecer la nueva contraseña.
-- Datos locales: IndexedDB, store `local_state`.
-- Caché cloud: IndexedDB separado, store `cloud_state`, clave = `user.id`.
+- Caché cloud: IndexedDB, store `cloud_state`, clave = `user.id`.
+- Cola offline: IndexedDB, store `pending_ops`, más WAL de emergencia para proteger el intervalo previo al commit de IndexedDB.
 - Datos cloud reales: tabla `public.gf_user_state`, protegida por RLS.
-- El modo local nunca se sube automáticamente al iniciar sesión.
-- Al cerrar/cambiar de cuenta se elimina la caché cloud de la cuenta anterior; los datos locales permanecen.
+- El modo local sólo existe en PC, requiere PIN maestro y se usa sobre la última copia cloud de la cuenta.
+- Al volver Internet, las operaciones pendientes se concilian con el estado cloud actual mediante `updated_at`; no se reemplaza Cloud con una copia antigua completa.
+- La caché cloud por usuario se conserva para que esa PC mantenga una copia de contingencia.
 - Push remoto: cada suscripción Redis queda ligada a `userId`; no se envían eventos de una cuenta a otra.
 - Service Worker: no tiene `fetch` handler, por lo que no cachea Supabase ni APIs externas.
 

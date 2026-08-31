@@ -1,10 +1,19 @@
-# GymFlow Supabase V6
+# GymFlow V10 · Emergencia offline segura
 
-Código configurado para `nikoo978's Project` (`ubfqwmhxkjtqdcfnsmwe`).
+Implementado sobre la V8 de notificaciones:
 
-- Supabase Auth: email/contraseña, sesión persistente y recuperación.
-- Datos cloud: `gf_user_state`, separados por `user_id` con RLS.
-- Datos locales: permanecen separados y no se sincronizan automáticamente.
-- Backend Push: valida el access token contra el mismo proyecto Supabase.
+- Modo local sólo en PC.
+- PIN maestro `110725`.
+- Modo cloud bloqueado para escritura durante un corte: obliga a entrar al modo de emergencia.
+- Última copia cloud persistente en IndexedDB por usuario.
+- Cola de operaciones offline persistente en IndexedDB.
+- WAL sincrónico adicional para cubrir cierre/crash antes de terminar una escritura IndexedDB.
+- Operaciones con UUID e idempotencia.
+- Parches por registro: la reconexión no reemplaza colecciones completas con una copia antigua.
+- Reconciliación optimista usando `gf_user_state.updated_at`, con relectura y reintento si Cloud cambió.
+- Sincronización automática al evento `online` y reintentos periódicos mientras siga en modo local.
+- Salida automática del modo local sólo cuando la cola pendiente llega a cero.
+- Service Worker V10 con app-shell y assets Vite cacheados para poder reabrir la app sin conexión tras una visita online previa.
+- Sistema Web Push V8 conservado.
 
-La migración SQL está en `supabase/migrations/20260830_gf_user_state_rls.sql`.
+No hay migración SQL adicional. Se mantiene como requisito `20260830_gf_user_state_rls.sql`.
