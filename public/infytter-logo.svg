@@ -1,0 +1,6 @@
+<svg width="520" height="150" viewBox="0 0 520 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="520" height="150" rx="18" fill="#050505"/>
+<g transform="translate(26 27) scale(1.5)"><path d="M13 14H50L42 23H13V14Z" fill="#E30613"/><path d="M13 28H39L31 37H22V51H13V28Z" fill="#E30613"/><path d="M42 14H51L43 23H34L42 14Z" fill="#DADADA"/></g>
+<text x="130" y="72" fill="white" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="900" letter-spacing="1">INFYTTER</text>
+<text x="132" y="107" fill="#E30613" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="800" letter-spacing="5">FITNESS</text>
+</svg>
