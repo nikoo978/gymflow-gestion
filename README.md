@@ -1,46 +1,49 @@
-# GymFlow / Infytter Fitness · V.1.02
+# GymFlow / Infytter Fitness · V.1.03
 
-Aplicación web/PWA para operación de gimnasio con Supabase, Vercel, Web Push y modo local de emergencia.
+Versión enfocada en **usuarios, roles e interfaces diferenciadas**.
 
-## V.1.02
+## V.1.03
 
-Esta versión agrega dos bloques principales:
+### Admin master
 
-### Dashboard interactivo
+- Continúa siendo único e inalterable.
+- Ve la nueva sección **Usuarios** con todas las cuentas creadas en la PWA.
+- Puede cambiar cualquier cuenta no-master entre `Cliente`, `Profe` y `Coadmin`.
+- Mantiene todos los permisos operativos, financieros, notificaciones y modo local de emergencia.
 
-- Los iconos de **Personas activas**, **Ingresos del día**, **Accesos hoy** y **Cuotas por vencer** abren el detalle correspondiente.
-- La campana del encabezado despliega las últimas 10 notificaciones.
-- Cada notificación usa un tono visual leve según su naturaleza: ingresos/altas, accesos, vencimientos o alertas.
+### Coadmin
 
-### Usuarios y roles
+- Puede administrar roles y operar el sistema.
+- No puede eliminar datos críticos ni modificar/eliminar al Admin master.
 
-- Registro PWA abierto.
-- Toda cuenta nueva entra como `cliente`.
-- Existe exactamente un `admin` master.
-- Admin y coadmin administran roles por email desde **Personal**.
-- `coadmin`: operación administrativa sin acciones de borrado y sin capacidad de modificar al master.
-- `profe`: dashboard operativo, consulta de clientes y control de accesos; sin datos financieros.
-- `cliente`: cuenta registrada con pantalla básica en V.1.02; su interfaz específica llegará más adelante.
+### Profe
 
-## Estado cloud compartido
+- Dashboard propio.
+- Ve alumnos, estados de membresía, vencimientos y accesos.
+- Puede operar el control de acceso.
+- No recibe caja, cierres financieros ni administración de usuarios.
 
-Desde V.1.02 los datos operativos ya no viven en un estado separado por cada usuario. La migración crea `gf_gym_state`, compartido por el staff autorizado.
+### Cliente
 
-Las escrituras pasan por la RPC `gf_apply_operations`, que integra operaciones bajo bloqueo transaccional. Esto mantiene el enfoque offline-first de V10 y evita reemplazos completos del estado cloud.
+- Portal móvil propio.
+- Ve su plan, estado, vencimiento, sede, método de acceso y últimos accesos.
+- Para vincular la cuenta, el administrador debe cargar en la ficha del cliente exactamente el mismo email usado para registrarse en la PWA.
+- Supabase expone sólo la ficha y accesos de ese cliente; no recibe el estado global del gimnasio.
 
-## Instalación / actualización
+## Migraciones
 
-1. Aplicar en Supabase SQL Editor:
-   `supabase/migrations/20260831_gf_roles_shared_state.sql`
-2. Subir el proyecto a GitHub.
-3. Esperar el deploy de Vercel.
-4. Iniciar sesión con la cuenta administrativa existente y verificar que figure como **Admin master**.
+Si V.1.02 ya está funcionando, ejecutá **sólo**:
 
-La migración preserva `gf_user_state` como respaldo y, cuando existe, importa automáticamente el estado V10 de la cuenta master al nuevo estado compartido.
+```text
+supabase/migrations/20260831_gf_client_portal.sql
+```
 
-Ver también:
+Si instalás desde cero, ejecutá en orden:
 
-- `SUPABASE_SETUP.md`
-- `NOTIFICATIONS_SETUP.md`
-- `OFFLINE_MODE.md`
-- `VERSION.md`
+```text
+supabase/migrations/20260830_gf_user_state_rls.sql
+supabase/migrations/20260831_gf_roles_shared_state.sql
+supabase/migrations/20260831_gf_client_portal.sql
+```
+
+No requiere variables nuevas en Vercel.

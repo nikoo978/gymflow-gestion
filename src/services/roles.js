@@ -40,6 +40,12 @@ export async function setUserRoleByEmail(email, role) {
   return { ok: !error, profile: data || null, error };
 }
 
+export async function getMyClientPortal() {
+  if (!supabase) return { portal: null, error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_get_my_client_portal");
+  return { portal: data || null, error };
+}
+
 export function permissionsForRole(role) {
   return {
     role,

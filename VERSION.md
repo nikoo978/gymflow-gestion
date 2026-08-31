@@ -1,14 +1,12 @@
-# V.1.02
+# V.1.03
 
-Incluye:
+## Usuarios y portales por rol
 
-- Dashboard: detalle al pulsar los iconos de Personas activas, Ingresos del día, Accesos hoy y Cuotas por vencer.
-- Campana: últimas 10 notificaciones con color suave según naturaleza/importancia.
-- Versión visible discretamente en el menú lateral.
-- Registro PWA abierto con rol Cliente por defecto.
-- Un único Admin master.
-- Administración de roles por email: Coadmin / Profe / Cliente.
-- Coadmin con permisos administrativos pero sin borrados.
-- Profe con dashboard, clientes y control de accesos, sin información financiera.
-- Estado cloud compartido y conciliación transaccional por operaciones.
-- Modo local reservado al Admin master.
+- Panel dedicado **Usuarios y roles** para Admin/Coadmin.
+- Listado de todas las cuentas PWA registradas.
+- Cambio de rol en cualquier momento: Cliente / Profe / Coadmin.
+- Admin master único y protegido.
+- Vinculación de cuentas PWA con fichas de Cliente/Profesor mediante email.
+- Dashboard específico para Profesor, sin caja ni información financiera.
+- Portal Cliente con estado de membresía, plan, vencimiento, sede y últimos accesos.
+- El portal Cliente sólo recibe desde Supabase su propia ficha y sus propios accesos.

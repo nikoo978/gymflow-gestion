@@ -1,4 +1,4 @@
-# GymFlow V.1.02 · Modo local de emergencia
+# GymFlow V.1.03 · Modo local de emergencia
 
 El modo local sigue siendo un mecanismo de contingencia y no una segunda base de datos.
 

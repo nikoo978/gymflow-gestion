@@ -353,6 +353,10 @@ export function GymProvider({ children }) {
       if (!permissions?.canOperate) return forbidden();
       const duplicate = dataRef.current.people.find((item) => item.dni === person.dni);
       if (duplicate) return { ok: false, error: `El DNI ${person.dni} ya pertenece a ${duplicate.name}.` };
+      const normalizedEmail = String(person.email || "").trim().toLowerCase();
+      const duplicateEmail = normalizedEmail && dataRef.current.people.find((item) => String(item.email || "").trim().toLowerCase() === normalizedEmail);
+      if (duplicateEmail) return { ok: false, error: `El email ${normalizedEmail} ya está vinculado a ${duplicateEmail.name}.` };
+      person = { ...person, email: normalizedEmail };
       const current = dataRef.current;
       const branch = person.branch || current.activeBranch;
       const id = crypto.randomUUID();
@@ -380,6 +384,10 @@ export function GymProvider({ children }) {
       const currentData = dataRef.current;
       const duplicate = currentData.people.find((item) => item.dni === changes.dni && item.id !== id);
       if (duplicate) return { ok: false, error: `El DNI ${changes.dni} ya pertenece a ${duplicate.name}.` };
+      const normalizedEmail = String(changes.email || "").trim().toLowerCase();
+      const duplicateEmail = normalizedEmail && currentData.people.find((item) => item.id !== id && String(item.email || "").trim().toLowerCase() === normalizedEmail);
+      if (duplicateEmail) return { ok: false, error: `El email ${normalizedEmail} ya está vinculado a ${duplicateEmail.name}.` };
+      changes = { ...changes, email: normalizedEmail };
       update((d) => {
         const person = d.people.find((item) => item.id === id);
         if (person) Object.assign(person, changes);
