@@ -1,0 +1,56 @@
+import { supabase } from "./supabase";
+
+export const ROLE_LABELS = {
+  admin: "Admin master",
+  coadmin: "Coadmin",
+  profe: "Profe",
+  cliente: "Cliente",
+};
+
+export const ROLE_OPTIONS = ["coadmin", "profe", "cliente"];
+
+export async function getMyProfile() {
+  if (!supabase) return { profile: null, error: new Error("Supabase no configurado") };
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user?.id) return { profile: null, error: authError || new Error("Sin sesión") };
+  const { data, error } = await supabase
+    .from("gf_profiles")
+    .select("user_id,email,display_name,role,is_master,created_at,updated_at")
+    .eq("user_id", authData.user.id)
+    .maybeSingle();
+  return { profile: data || null, error };
+}
+
+export async function listProfiles() {
+  if (!supabase) return { profiles: [], error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase
+    .from("gf_profiles")
+    .select("user_id,email,display_name,role,is_master,created_at,updated_at")
+    .order("is_master", { ascending: false })
+    .order("created_at", { ascending: true });
+  return { profiles: data || [], error };
+}
+
+export async function setUserRoleByEmail(email, role) {
+  if (!supabase) return { ok: false, error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_set_user_role", {
+    target_email: String(email || "").trim().toLowerCase(),
+    new_role: role,
+  });
+  return { ok: !error, profile: data || null, error };
+}
+
+export function permissionsForRole(role) {
+  return {
+    role,
+    isMaster: role === "admin",
+    isStaff: ["admin", "coadmin", "profe"].includes(role),
+    canManageRoles: ["admin", "coadmin"].includes(role),
+    canUseLocalMode: role === "admin",
+    canOperate: ["admin", "coadmin"].includes(role),
+    canDelete: role === "admin",
+    canAccessControl: ["admin", "coadmin", "profe"].includes(role),
+    canViewFinance: ["admin", "coadmin"].includes(role),
+    canManageNotifications: ["admin", "coadmin"].includes(role),
+  };
+}

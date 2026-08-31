@@ -1,38 +1,30 @@
-# GymFlow V10 · Modo local de emergencia
+# GymFlow V.1.02 · Modo local de emergencia
 
-## Funcionamiento
+El modo local sigue siendo un mecanismo de contingencia y no una segunda base de datos.
 
-- Disponible exclusivamente en navegador de PC (pantalla >= 900 px, puntero fino y sin UA móvil/tablet).
-- Sólo se habilita cuando el navegador detecta que la PC está sin Internet.
-- Requiere una sesión cloud iniciada previamente en esa PC y una copia cloud cacheada.
-- PIN maestro: `110725` (se compara mediante SHA-256 en el cliente; el PIN no se guarda en texto plano en el código).
-- En modo cloud sin Internet la interfaz operativa queda bloqueada. Para registrar movimientos hay que activar explícitamente el modo local con PIN.
-- El modo local usa la última copia cloud de esa cuenta; no crea una base paralela independiente.
+## Restricciones
 
-## Persistencia sin pérdida
+- Sólo aparece en PC de escritorio.
+- Sólo puede usarlo el **Admin master**.
+- Requiere una sesión cloud previa en esa PC.
+- Requiere PIN maestro.
+- Sólo se habilita cuando la aplicación confirma que no hay Internet.
+- Coadmin, Profe y Cliente nunca pueden activarlo.
 
-Cada modificación genera operaciones con UUID propio. Antes de reflejar el cambio en pantalla se escribe un WAL sincrónico de emergencia en `localStorage`; inmediatamente después se persiste la misma operación en IndexedDB (`pending_ops`). Si el navegador o la PC se cierran durante ese intervalo, el WAL se recupera al próximo arranque.
+## Persistencia
 
-La copia de trabajo completa también se mantiene en IndexedDB por `user.id`.
+- Última copia cloud válida: IndexedDB.
+- Operaciones pendientes: IndexedDB `pending_ops`.
+- WAL de emergencia: `localStorage`, utilizado únicamente para proteger el intervalo previo al commit de IndexedDB.
+- Cada operación tiene UUID propio y es idempotente por ID de registro.
 
-## Reconciliación con Cloud
+## Al volver Internet
 
-Al volver Internet:
+1. Recupera cualquier operación que hubiera quedado en WAL.
+2. Envía la cola por lotes.
+3. Supabase ejecuta `gf_apply_operations(...)` dentro de una transacción y bloquea el estado compartido mientras integra el lote.
+4. Las operaciones se aplican sobre el estado cloud más reciente, no reemplazando todo el documento con una copia offline antigua.
+5. Sólo se quitan de la cola local después de una respuesta satisfactoria.
+6. Cuando la cola llega a cero, GymFlow vuelve automáticamente a Cloud.
 
-1. Se recupera cualquier WAL pendiente hacia IndexedDB.
-2. Se obtiene el estado cloud actual junto con `updated_at`.
-3. Las operaciones locales se aplican sobre ese estado actual, nunca sobre una copia cloud antigua completa.
-4. La escritura usa control optimista (`user_id + updated_at`). Si otro dispositivo actualizó el estado mientras tanto, se vuelve a leer Cloud, se reaplican las operaciones y se reintenta.
-5. Sólo después de una escritura cloud confirmada se eliminan las operaciones de IndexedDB.
-6. Las operaciones son idempotentes: altas usan UUID estable, parches se reaplican sin duplicar, y borrados son repetibles.
-7. Con cero pendientes, GymFlow sale automáticamente del modo local y vuelve a Cloud.
-
-Esto evita el patrón peligroso de reemplazar todo `gf_user_state` con una copia offline vieja y conserva movimientos cloud que hayan aparecido durante el corte.
-
-## Base de datos
-
-No requiere una migración nueva respecto de V8. Debe seguir aplicada:
-
-`supabase/migrations/20260830_gf_user_state_rls.sql`
-
-La columna `updated_at` y su trigger se usan para el control de concurrencia.
+Esto permite conservar movimientos generados por otros administradores mientras el Admin master estuvo trabajando sin conexión.

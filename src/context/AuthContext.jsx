@@ -5,13 +5,26 @@ import { KeyRound, LogIn, Mail, ShieldCheck, UserPlus, X } from "lucide-react";
 import { supabase, supabaseConfigured } from "../services/supabase";
 import { getCloudState } from "../services/storage";
 import { unlinkPushSubscriptionBeforeLogout } from "../services/notifications";
+import { getMyProfile, permissionsForRole } from "../services/roles";
 
 const AuthContext = createContext(null);
 const MODE_KEY = "gymflow-emergency-local-mode";
 const MASTER_PIN_SHA256 = "f80a08b67ae13695c7e3c325abd0fcd811419ee8af4707ccd9423e020664e70a"; // 110725
+const PROFILE_CACHE_KEY = "gymflow-profile-v1";
 
 function getModeStorage() {
   try { return window.sessionStorage; } catch { return null; }
+}
+
+function getCachedProfile(userId) {
+  try {
+    const value = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || "null");
+    return value?.user_id === userId ? value : null;
+  } catch { return null; }
+}
+
+function cacheProfile(profile) {
+  try { if (profile) localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)); } catch { /* no-op */ }
 }
 
 function isDesktopPc() {
@@ -71,7 +84,7 @@ function AuthScreen({ onLogin, onRegister, onReset, error, notice, busy }) {
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           {view === "register"
-            ? "Creá tu cuenta con email y contraseña. Tus datos cloud quedarán separados por usuario."
+            ? "Creá tu cuenta con email y contraseña. Las cuentas nuevas ingresan como cliente hasta que un administrador cambie su rol."
             : view === "reset"
               ? "Te enviaremos un enlace para elegir una contraseña nueva."
               : "Acceso seguro con Supabase."}
@@ -189,10 +202,46 @@ export function AuthProvider({ children }) {
   const [pinOpen, setPinOpen] = useState(false);
   const [pinError, setPinError] = useState("");
   const [pinBusy, setPinBusy] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const previousUserId = useRef(null);
   const modeRef = useRef(mode);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
+
+  const refreshProfile = async (userId = session?.user?.id) => {
+    if (!userId) { setProfile(null); setProfileError(""); return null; }
+    setProfileLoading(true);
+    try {
+      const { profile: next, error: profileLoadError } = await getMyProfile();
+      if (profileLoadError) throw profileLoadError;
+      if (!next) throw new Error("Tu cuenta todavía no tiene un perfil GymFlow. Aplicá la migración V.1.02 en Supabase.");
+      setProfile(next);
+      cacheProfile(next);
+      setProfileError("");
+      return next;
+    } catch (err) {
+      const cached = getCachedProfile(userId);
+      if (cached) { setProfile(cached); setProfileError(""); return cached; }
+      setProfile(null);
+      setProfileError(err?.message || "No se pudo cargar el rol de la cuenta.");
+      return null;
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!session?.user?.id) { setProfile(null); setProfileError(""); return; }
+    refreshProfile(session.user.id);
+  }, [session?.user?.id, isOnline]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !isOnline) return undefined;
+    const timer = setInterval(() => { refreshProfile(session.user.id); }, 15000);
+    return () => clearInterval(timer);
+  }, [session?.user?.id, isOnline]);
 
   useEffect(() => {
     let active = true;
@@ -298,7 +347,7 @@ export function AuthProvider({ children }) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${location.origin}/`, data: { name: name || "Administrador" } },
+        options: { emailRedirectTo: `${location.origin}/`, data: { name: name || "Usuario" } },
       });
       if (signUpError) throw signUpError;
       if (!data.session) setNotice("Cuenta creada. Revisá tu correo para confirmar el email y después ingresá.");
@@ -341,6 +390,10 @@ export function AuthProvider({ children }) {
       setError("El modo local requiere una sesión cloud iniciada previamente en esta PC.");
       return;
     }
+    if (profile?.role !== "admin" || !profile?.is_master) {
+      setError("El modo local está reservado exclusivamente para el Admin master.");
+      return;
+    }
     if (isOnline) {
       setError("El modo local de emergencia sólo se habilita cuando esta PC está sin Internet.");
       return;
@@ -353,6 +406,7 @@ export function AuthProvider({ children }) {
     setPinBusy(true);
     try {
       if (!desktopPc || !session?.user?.id) throw new Error("El modo local sólo está disponible en PC con una sesión cloud previa.");
+      if (profile?.role !== "admin" || !profile?.is_master) throw new Error("El modo local está reservado exclusivamente para el Admin master.");
       if (isOnline) throw new Error("La conexión volvió. No es necesario usar el modo local.");
       const digest = await sha256(String(pin || ""));
       if (digest !== MASTER_PIN_SHA256) throw new Error("PIN maestro incorrecto.");
@@ -390,6 +444,7 @@ export function AuthProvider({ children }) {
     await supabase?.auth.signOut({ scope: "local" }).catch(() => undefined);
     getModeStorage()?.removeItem(MODE_KEY);
     setSession(null);
+    setProfile(null);
     setMode("auth");
   };
 
@@ -398,14 +453,30 @@ export function AuthProvider({ children }) {
   if (mode === "auth") return <AuthScreen onLogin={login} onRegister={register} onReset={resetPassword} error={error} notice={notice} busy={busy} />;
 
   const user = session?.user || null;
+  if (user && profileLoading && !profile) return <div className="min-h-screen bg-[#050505]" />;
+  if (user && profileError && !profile) return (
+    <main className="grid min-h-screen place-items-center bg-[#050505] p-4">
+      <section className="w-full max-w-lg rounded-[24px] bg-white p-7 shadow-2xl">
+        <h1 className="text-2xl font-black uppercase text-[#050505]">Actualización requerida</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">{profileError}</p>
+        <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-bold text-[#9E0710]">Ejecutá <code>supabase/migrations/20260831_gf_roles_shared_state.sql</code> una sola vez y recargá.</p>
+        <button onClick={logout} className="btn-primary mt-5 w-full">Cerrar sesión</button>
+      </section>
+    </main>
+  );
+  const permissions = permissionsForRole(profile?.role);
   const value = {
     mode,
     session,
     user,
+    profile,
+    role: profile?.role || "cliente",
+    permissions,
+    refreshProfile,
     isCloud: mode === "cloud" && Boolean(user),
     isLocal: mode === "local" && Boolean(user),
     isOnline,
-    canUseLocalMode: desktopPc && Boolean(user) && !isOnline,
+    canUseLocalMode: permissions.canUseLocalMode && Boolean(profile?.is_master) && desktopPc && Boolean(user) && !isOnline,
     requestLocalMode,
     exitLocalMode,
     logout,

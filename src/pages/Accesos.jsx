@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Delete, DoorOpen, Fingerprint, MonitorUp, Search, Trash2, XCircle } from "lucide-react";
 import { statusOf, useGym } from "../context/GymContext";
+import { useAuth } from "../context/AuthContext";
 
 const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
 const INPUT_KEY = "gymflow-keypad-input";
 
 export default function Accesos() {
   const { data, checkAccess, clearAccesses, allowGuest } = useGym();
+  const { permissions } = useAuth();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const inputRef = useRef(null);
@@ -132,7 +134,7 @@ export default function Accesos() {
         </article>
 
         <article className="panel">
-          <div className="flex items-center justify-between gap-3"><h2 className="section-title">Últimos intentos</h2><button onClick={clearRecent} disabled={!recent.length} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-black text-[#9E0710] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Borrar</button></div>
+          <div className="flex items-center justify-between gap-3"><h2 className="section-title">Últimos intentos</h2>{permissions?.canDelete && <button onClick={clearRecent} disabled={!recent.length} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-black text-[#9E0710] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Borrar</button>}</div>
           <div className="mt-4 divide-y divide-slate-100">
             {recent.map((access) => {
               const person = data.people.find((item) => item.id === access.personId);

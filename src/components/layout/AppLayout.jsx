@@ -2,22 +2,33 @@
 
 import { Bell, ChevronDown, Cloud, CloudOff, HardDrive, LogOut, Menu, RefreshCw, ShieldCheck, WifiOff, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { navigation } from "../../App";
+import { useEffect, useRef, useState } from "react";
+import { APP_VERSION, navigation } from "../../App";
 import { useGym } from "../../context/GymContext";
 import { useAuth } from "../../context/AuthContext";
+import { ROLE_LABELS } from "../../services/roles";
+
+const notificationTone = (type) => {
+  if (["deniedAccess", "membershipExpired", "expense", "withdrawal"].includes(type)) return "border-red-100 bg-red-50/70";
+  if (["membershipExpiring"].includes(type)) return "border-amber-100 bg-amber-50/70";
+  if (["income", "newClient"].includes(type)) return "border-emerald-100 bg-emerald-50/70";
+  if (["clientAccess", "staffAccess", "manualAccess"].includes(type)) return "border-sky-100 bg-sky-50/70";
+  return "border-slate-100 bg-slate-50/80";
+};
 
 function Nav({ currentPath, onNavigate, onSync }) {
-  const { user, isCloud, isLocal, logout } = useAuth();
-  const displayName = isLocal ? "Modo local" : (user?.user_metadata?.name || user?.email?.split("@")[0] || "Administrador");
-  const subtitle = isCloud ? user?.email : "Emergencia · administrador";
+  const { user, profile, role, isCloud, isLocal, logout } = useAuth();
+  const displayName = isLocal ? "Modo local" : (profile?.display_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario");
+  const subtitle = isCloud ? `${ROLE_LABELS[role] || role} · ${user?.email || ""}` : "Emergencia · Admin master";
   const initials = String(displayName || "GF").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   return <>
-    <Link to="/" onClick={onNavigate} className="block px-5 pb-5 pt-6"><img src="/infytter-logo.svg" alt="Infytter Fitness" className="h-12 w-full object-contain object-left" /></Link>
+    <Link to="/" onClick={onNavigate} className="block px-5 pb-2 pt-6"><img src="/infytter-logo.svg" alt="Infytter Fitness" className="h-12 w-full object-contain object-left" /></Link>
+    <p className="px-6 pb-5 text-[10px] font-black tracking-[0.16em] text-[#666]">{APP_VERSION}</p>
     <p className="px-6 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#AFAFAF]">Operación</p>
     <nav className="grid gap-1.5 px-3">
-      {navigation.map(({ label, path, icon: Icon }) => <Link key={path} to={path} onClick={onNavigate} className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm ${currentPath === path ? "bg-[#E30613] font-black text-white" : "text-[#DADADA] hover:bg-[#282828] hover:text-white"}`}><Icon className="size-[18px]" />{label}</Link>)}
+      {visibleNavigation.map(({ label, path, icon: Icon }) => <Link key={path} to={path} onClick={onNavigate} className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm ${currentPath === path ? "bg-[#E30613] font-black text-white" : "text-[#DADADA] hover:bg-[#282828] hover:text-white"}`}><Icon className="size-[18px]" />{label}</Link>)}
     </nav>
     <div className="m-3 mt-auto rounded-2xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-center gap-3">
@@ -31,9 +42,39 @@ function Nav({ currentPath, onNavigate, onSync }) {
   </>;
 }
 
+function NotificationsMenu({ data, canOpenAll }) {
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef(null);
+  const latest = (data.notificationLog || []).slice(0, 10);
+
+  useEffect(() => {
+    const close = (event) => { if (open && boxRef.current && !boxRef.current.contains(event.target)) setOpen(false); };
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  return <div ref={boxRef} className="relative">
+    <button onClick={() => setOpen((value) => !value)} aria-label="Últimas notificaciones" aria-expanded={open} className="relative grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-slate-600 hover:bg-slate-50">
+      <Bell className="size-[18px]" />
+      {!!latest.length && <span className="absolute right-2 top-2 size-2 rounded-full border-2 border-white bg-[#E30613]" />}
+    </button>
+    {open && <div className="absolute right-0 top-12 z-50 w-[min(92vw,410px)] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
+      <div className="flex items-center justify-between border-b border-black/6 px-4 py-3"><div><p className="text-sm font-black text-[#050505]">Últimas notificaciones</p><p className="text-[11px] text-slate-400">Hasta 10 eventos recientes</p></div><button onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg hover:bg-slate-50"><X className="size-4" /></button></div>
+      <div className="max-h-[430px] space-y-2 overflow-y-auto p-3">
+        {latest.map((item) => <div key={item.id} className={`rounded-xl border p-3 ${notificationTone(item.type)}`}>
+          <div className="flex items-start justify-between gap-3"><p className="text-sm font-black text-[#050505]">{item.title}</p><time className="shrink-0 text-[10px] font-bold text-slate-400">{new Date(item.date).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</time></div>
+          <p className="mt-1 text-xs leading-5 text-slate-600">{item.body}</p>
+        </div>)}
+        {!latest.length && <p className="py-8 text-center text-sm text-slate-400">Todavía no hay notificaciones.</p>}
+      </div>
+      {canOpenAll && <Link to="/notificaciones" onClick={() => setOpen(false)} className="block border-t border-black/6 px-4 py-3 text-center text-xs font-black text-[#E30613] hover:bg-red-50">Ver notificaciones y preferencias</Link>}
+    </div>}
+  </div>;
+}
+
 export default function AppLayout({ currentPath, children }) {
   const { data, setBranch, sync, pendingCount, syncPendingNow } = useGym();
-  const { isCloud, isLocal, isOnline, canUseLocalMode, requestLocalMode } = useAuth();
+  const { role, permissions, isCloud, isLocal, isOnline, canUseLocalMode, requestLocalMode } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const now = new Date();
   const syncIcon = isCloud && sync === "Sincronizado" ? <Cloud className="size-3.5 text-[#E30613]" /> : isLocal ? <HardDrive className="size-3.5 text-[#E30613]" /> : <CloudOff className="size-3.5 text-[#9E0710]" />;
@@ -48,8 +89,8 @@ export default function AppLayout({ currentPath, children }) {
           {isCloud && canUseLocalMode && <button onClick={requestLocalMode} className="hidden items-center gap-1.5 rounded-full border border-black/8 bg-white px-3 py-1.5 text-[11px] font-black text-slate-600 shadow-sm md:inline-flex"><ShieldCheck className="size-3.5 text-[#E30613]" /> Modo local</button>}
           {isLocal && <button onClick={syncPendingNow} className="hidden items-center gap-1.5 rounded-full bg-[#050505] px-3 py-1.5 text-[11px] font-black text-white shadow-sm md:inline-flex"><RefreshCw className="size-3.5 text-[#E30613]" /> Sincronizar{pendingCount ? ` (${pendingCount})` : ""}</button>}
           <span className="hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 shadow-sm sm:flex">{syncIcon}{sync}</span>
-          <Link to="/notificaciones" className="relative grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-slate-600"><Bell className="size-[18px]" /><span className="absolute right-2 top-2 size-2 rounded-full border-2 border-white bg-[#E30613]" /></Link>
-          <div className="hidden text-right sm:block"><p className="text-sm font-bold capitalize text-[#050505]">{now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" })}</p><p className="text-xs text-slate-500">{isCloud ? "Cuenta cloud" : "Modo local protegido"}</p></div>
+          <NotificationsMenu data={data} canOpenAll={permissions?.canManageNotifications} />
+          <div className="hidden text-right sm:block"><p className="text-sm font-bold capitalize text-[#050505]">{now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" })}</p><p className="text-xs text-slate-500">{isCloud ? ROLE_LABELS[role] || role : "Modo local protegido"}</p></div>
         </div>
       </header>
 
@@ -65,7 +106,7 @@ export default function AppLayout({ currentPath, children }) {
           {canUseLocalMode ? <>
             <p className="mt-3 text-sm font-bold text-slate-700">En esta PC administrativa podés continuar con el modo local de emergencia.</p>
             <button onClick={requestLocalMode} className="btn-primary mt-5 w-full"><ShieldCheck className="size-4" /> Activar modo local</button>
-          </> : <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-[#9E0710]">El modo local sólo está habilitado en PC. Esperá a que vuelva la conexión.</p>}
+          </> : <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-[#9E0710]">El modo local está reservado al Admin master desde una PC. Esperá a que vuelva la conexión.</p>}
         </section>
       </div>}
     </div>

@@ -6,40 +6,48 @@ import AppLayout from "./components/layout/AppLayout";
 import Accesos from "./pages/Accesos";
 import AccessDisplay from "./pages/AccessDisplay";
 import Caja from "./pages/Caja";
+import ClientHome from "./pages/ClientHome";
 import Clientes from "./pages/Clientes";
 import Dashboard from "./pages/Dashboard";
 import Notificaciones from "./pages/Notificaciones";
 import Personal from "./pages/Personal";
 import Reportes from "./pages/Reportes";
+import { useAuth } from "./context/AuthContext";
 
+export const APP_VERSION = "V.1.02";
 export const navigation = [
-  { label: "Dashboard", path: "/", icon: LayoutDashboard },
-  { label: "Clientes", path: "/clientes", icon: UsersRound },
-  { label: "Personal", path: "/personal", icon: UserCog },
-  { label: "Caja", path: "/caja", icon: CircleDollarSign },
-  { label: "Reportes", path: "/reportes", icon: BarChart3 },
-  { label: "Accesos", path: "/accesos", icon: Fingerprint },
-  { label: "Notificaciones", path: "/notificaciones", icon: BellRing },
+  { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin", "profe"] },
+  { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin", "profe"] },
+  { label: "Personal", path: "/personal", icon: UserCog, roles: ["admin", "coadmin"] },
+  { label: "Caja", path: "/caja", icon: CircleDollarSign, roles: ["admin", "coadmin"] },
+  { label: "Reportes", path: "/reportes", icon: BarChart3, roles: ["admin", "coadmin"] },
+  { label: "Accesos", path: "/accesos", icon: Fingerprint, roles: ["admin", "coadmin", "profe"] },
+  { label: "Notificaciones", path: "/notificaciones", icon: BellRing, roles: ["admin", "coadmin"] },
 ];
 
 export const productMeta = { name: "Infytter Fitness", icon: Dumbbell, branchIcon: Building2 };
 
 export default function App() {
   const location = useLocation();
+  const { role } = useAuth();
 
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
+  if (role === "cliente") return <ClientHome />;
+
+  const allowed = (path) => navigation.find((item) => item.path === path)?.roles.includes(role);
+  const fallback = "/";
 
   return (
     <AppLayout currentPath={location.pathname}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/clientes" element={<Clientes />} />
-        <Route path="/personal" element={<Personal />} />
-        <Route path="/caja" element={<Caja />} />
-        <Route path="/reportes" element={<Reportes />} />
-        <Route path="/accesos" element={<Accesos />} />
-        <Route path="/notificaciones" element={<Notificaciones />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/clientes" element={allowed("/clientes") ? <Clientes /> : <Navigate to={fallback} replace />} />
+        <Route path="/personal" element={allowed("/personal") ? <Personal /> : <Navigate to={fallback} replace />} />
+        <Route path="/caja" element={allowed("/caja") ? <Caja /> : <Navigate to={fallback} replace />} />
+        <Route path="/reportes" element={allowed("/reportes") ? <Reportes /> : <Navigate to={fallback} replace />} />
+        <Route path="/accesos" element={allowed("/accesos") ? <Accesos /> : <Navigate to={fallback} replace />} />
+        <Route path="/notificaciones" element={allowed("/notificaciones") ? <Notificaciones /> : <Navigate to={fallback} replace />} />
+        <Route path="*" element={<Navigate to={fallback} replace />} />
       </Routes>
     </AppLayout>
   );

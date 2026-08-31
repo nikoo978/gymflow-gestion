@@ -147,72 +147,13 @@ async function refreshAuthIfNeeded(error) {
   return true;
 }
 
-async function fetchRemoteState(userId) {
-  let result = await supabase
-    .from("gf_user_state")
-    .select("data,updated_at")
-    .eq("user_id", userId)
-    .maybeSingle();
-
+async function applyRemoteOperations(operations) {
+  let result = await supabase.rpc("gf_apply_operations", { p_operations: operations });
   if (result.error && await refreshAuthIfNeeded(result.error)) {
-    result = await supabase
-      .from("gf_user_state")
-      .select("data,updated_at")
-      .eq("user_id", userId)
-      .maybeSingle();
+    result = await supabase.rpc("gf_apply_operations", { p_operations: operations });
   }
   if (result.error) throw result.error;
   return result.data || null;
-}
-
-async function insertInitialState(userId, state) {
-  let result = await supabase
-    .from("gf_user_state")
-    .insert({ user_id: userId, data: state })
-    .select("data,updated_at")
-    .maybeSingle();
-
-  if (result.error && await refreshAuthIfNeeded(result.error)) {
-    result = await supabase
-      .from("gf_user_state")
-      .insert({ user_id: userId, data: state })
-      .select("data,updated_at")
-      .maybeSingle();
-  }
-  return result;
-}
-
-async function optimisticApply(userId, operations) {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const remote = await fetchRemoteState(userId);
-    const merged = applyOperationsLocally(remote?.data || {}, operations);
-
-    if (!remote) {
-      const created = await insertInitialState(userId, merged);
-      if (!created.error && created.data) return created.data.data;
-      if (created.error?.code === "23505") continue;
-      if (created.error) throw created.error;
-      continue;
-    }
-
-    let query = supabase
-      .from("gf_user_state")
-      .update({ data: merged })
-      .eq("user_id", userId);
-
-    if (remote.updated_at) query = query.eq("updated_at", remote.updated_at);
-
-    let result = await query.select("data,updated_at");
-    if (result.error && await refreshAuthIfNeeded(result.error)) {
-      query = supabase.from("gf_user_state").update({ data: merged }).eq("user_id", userId);
-      if (remote.updated_at) query = query.eq("updated_at", remote.updated_at);
-      result = await query.select("data,updated_at");
-    }
-    if (result.error) throw result.error;
-    if (Array.isArray(result.data) && result.data.length === 1) return result.data[0].data;
-  }
-
-  throw new Error("No se pudo conciliar el estado cloud porque cambió repetidamente. Se reintentará sin descartar ningún movimiento local.");
 }
 
 export async function flushPendingOperations(userId, limit = 200) {
@@ -220,7 +161,7 @@ export async function flushPendingOperations(userId, limit = 200) {
   const pending = (await getPendingOperations(userId)).slice(0, limit);
   if (!pending.length) return { remoteState: null, sent: 0 };
 
-  const remoteState = await optimisticApply(userId, pending);
+  const remoteState = await applyRemoteOperations(pending);
   await deletePendingOperations(userId, pending.map((operation) => operation.id));
   return { remoteState, sent: pending.length };
 }

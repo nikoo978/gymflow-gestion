@@ -9,6 +9,8 @@ import { useAuth } from "./AuthContext";
 
 const GymContext = createContext(null);
 const iso = (days = 0) => { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); };
+const BRANCH_KEY = "gymflow-active-branch";
+const localBranch = () => { try { return localStorage.getItem(BRANCH_KEY); } catch { return null; } };
 const defaultNotificationPreferences = {
   newClient: true,
   income: true,
@@ -57,6 +59,7 @@ const normalizeData = (value) => ({
   ...seed,
   ...(value || {}),
   branches: Array.isArray(value?.branches) && value.branches.length ? value.branches : seed.branches,
+  activeBranch: localBranch() || value?.activeBranch || seed.activeBranch,
   people: Array.isArray(value?.people) ? value.people : [],
   transactions: Array.isArray(value?.transactions) ? value.transactions : [],
   accesses: Array.isArray(value?.accesses) ? value.accesses : [],
@@ -79,7 +82,7 @@ export function statusOf(person) {
 }
 
 export function GymProvider({ children }) {
-  const { user, isCloud, isLocal, isOnline, exitLocalMode } = useAuth();
+  const { user, isCloud, isLocal, isOnline, exitLocalMode, permissions } = useAuth();
   const [data, setData] = useState(seed);
   const [sync, setSync] = useState("Cargando");
   const [pendingCount, setPendingCount] = useState(0);
@@ -119,6 +122,7 @@ export function GymProvider({ children }) {
 
   const syncPendingNow = async () => {
     if (!user?.id || !storageReady || syncingRef.current) return false;
+    if (!permissions?.isStaff) { setSync("Cuenta cliente"); return false; }
     if (!isOnline) {
       const count = await refreshPendingCount(user.id);
       setSync(isLocal ? `Modo local · ${count} pendiente${count === 1 ? "" : "s"}` : `Sin conexión · ${count} pendiente${count === 1 ? "" : "s"}`);
@@ -149,13 +153,9 @@ export function GymProvider({ children }) {
       }
 
       if (!sentAny) {
-        const { data: row, error } = await supabase
-          .from("gf_user_state")
-          .select("data")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data: remote, error } = await supabase.rpc("gf_get_gym_state");
         if (error) throw error;
-        remoteState = row?.data || seed;
+        remoteState = remote || seed;
       }
 
       const remaining = await localUnsentOperations(user.id);
@@ -191,6 +191,15 @@ export function GymProvider({ children }) {
     setSync(isLocal ? "Cargando modo local" : isCloud ? "Conectando" : "Sin sesión");
 
     (async () => {
+      if (isCloud && user?.id && !permissions?.isStaff) {
+        if (!active || loadedIdentity.current !== identity) return;
+        replaceData(seed);
+        setPendingCount(0);
+        setSync("Cuenta cliente");
+        setStorageReady(true);
+        return;
+      }
+
       if ((isLocal || isCloud) && user?.id) {
         const cached = await getCloudState(user.id).catch(() => null);
         await recoverWalOperations(user.id).catch(() => undefined);
@@ -207,19 +216,9 @@ export function GymProvider({ children }) {
         }
 
         try {
-          const { data: row, error } = await supabase
-            .from("gf_user_state")
-            .select("data")
-            .eq("user_id", user.id)
-            .maybeSingle();
+          const { data: remoteState, error } = await supabase.rpc("gf_get_gym_state");
           if (error) throw error;
-          let remote = normalizeData(row?.data || seed);
-          if (!row) {
-            const { error: createError } = await supabase
-              .from("gf_user_state")
-              .upsert({ user_id: user.id, data: remote }, { onConflict: "user_id" });
-            if (createError) throw createError;
-          }
+          const remote = normalizeData(remoteState || seed);
           const next = applyOperationsLocally(remote, queued);
           await setCloudState(user.id, next).catch(() => undefined);
           if (!active || loadedIdentity.current !== identity) return;
@@ -243,25 +242,25 @@ export function GymProvider({ children }) {
     })();
 
     return () => { active = false; };
-  }, [isCloud, isLocal, user?.id]);
+  }, [isCloud, isLocal, user?.id, permissions?.isStaff]);
 
   useEffect(() => {
-    if (!storageReady || !user?.id || (!isCloud && !isLocal)) return undefined;
+    if (!storageReady || !user?.id || !permissions?.isStaff || (!isCloud && !isLocal)) return undefined;
     const timer = setTimeout(() => {
       setCloudState(user.id, data).catch(() => undefined);
     }, 80);
     return () => clearTimeout(timer);
-  }, [data, storageReady, isCloud, isLocal, user?.id]);
+  }, [data, storageReady, isCloud, isLocal, user?.id, permissions?.isStaff]);
 
   useEffect(() => {
-    if (!storageReady || !user?.id) return undefined;
+    if (!storageReady || !user?.id || !permissions?.isStaff) return undefined;
     const interval = isLocal ? setInterval(() => { syncPendingNow(); }, 10000) : null;
     const initial = isOnline ? setTimeout(() => { syncPendingNow(); }, isLocal ? 200 : 500) : null;
     return () => {
       if (interval) clearInterval(interval);
       if (initial) clearTimeout(initial);
     };
-  }, [storageReady, isCloud, isLocal, isOnline, user?.id]);
+  }, [storageReady, isCloud, isLocal, isOnline, user?.id, permissions?.isStaff]);
 
   const reminderSignature = data.people
     .filter((person) => person.role === "Cliente")
@@ -270,14 +269,14 @@ export function GymProvider({ children }) {
     .join(";");
 
   useEffect(() => {
-    if (!isCloud || !storageReady) return undefined;
+    if (!isCloud || !storageReady || !permissions?.canManageNotifications) return undefined;
     const timer = setTimeout(() => {
       data.people.filter((person) => person.role === "Cliente" && person.expiry).forEach((person) => {
         scheduleMembershipNotifications(person).catch(() => undefined);
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [reminderSignature, isCloud, storageReady]);
+  }, [reminderSignature, isCloud, storageReady, permissions?.canManageNotifications]);
 
   const update = (fn) => {
     const before = dataRef.current;
@@ -339,10 +338,19 @@ export function GymProvider({ children }) {
     } catch { /* localStorage mantiene la compatibilidad */ }
   };
 
+  const forbidden = (message = "Tu rol no tiene permiso para realizar esta acción.") => ({ ok: false, error: message });
   const actions = {
-    setBranch: (activeBranch) => update((d) => ({ ...d, activeBranch })),
-    setNotificationPreference: (type, enabled) => update((d) => ({ ...d, notificationPreferences: { ...d.notificationPreferences, [type]: enabled } })),
+    setBranch: (activeBranch) => {
+      if (!permissions?.isStaff) return dataRef.current;
+      try { localStorage.setItem(BRANCH_KEY, activeBranch); } catch { /* no-op */ }
+      const next = { ...dataRef.current, activeBranch };
+      dataRef.current = next;
+      setData(next);
+      return next;
+    },
+    setNotificationPreference: (type, enabled) => permissions?.canManageNotifications ? update((d) => ({ ...d, notificationPreferences: { ...d.notificationPreferences, [type]: enabled } })) : dataRef.current,
     addPerson: (person) => {
+      if (!permissions?.canOperate) return forbidden();
       const duplicate = dataRef.current.people.find((item) => item.dni === person.dni);
       if (duplicate) return { ok: false, error: `El DNI ${person.dni} ya pertenece a ${duplicate.name}.` };
       const current = dataRef.current;
@@ -368,6 +376,7 @@ export function GymProvider({ children }) {
       return { ok: true, id };
     },
     editPerson: (id, changes) => {
+      if (!permissions?.canOperate) return forbidden();
       const currentData = dataRef.current;
       const duplicate = currentData.people.find((item) => item.dni === changes.dni && item.id !== id);
       if (duplicate) return { ok: false, error: `El DNI ${changes.dni} ya pertenece a ${duplicate.name}.` };
@@ -382,10 +391,12 @@ export function GymProvider({ children }) {
       return { ok: true };
     },
     deletePerson: (id) => {
+      if (!permissions?.canDelete) return forbidden("Sólo el Admin master puede eliminar personas.");
       if (isCloud) cancelMembershipNotifications(id).catch(() => undefined);
       return update((d) => ({ ...d, people: d.people.filter((person) => person.id !== id) }));
     },
     renew: (id, { months, discount, method }) => {
+      if (!permissions?.canOperate) return forbidden();
       const currentPerson = dataRef.current.people.find((person) => person.id === id); if (!currentPerson) return;
       const amount = Math.round(currentPerson.price * Number(months) * (1 - Number(discount || 0) / 100));
       const base = new Date(Math.max(Date.now(), new Date(`${currentPerson.expiry || iso()}T12:00:00`).getTime()));
@@ -401,6 +412,7 @@ export function GymProvider({ children }) {
       if (isCloud) scheduleMembershipNotifications({ ...currentPerson, expiry: nextExpiry }).catch(() => undefined);
     },
     addTransaction: (transaction) => {
+      if (!permissions?.canOperate) return forbidden();
       const current = dataRef.current;
       const branch = transaction.branch || current.activeBranch; const amount = Number(transaction.amount);
       update((d) => ({ ...d, transactions: [{ ...transaction, id: crypto.randomUUID(), branch, amount, date: transaction.date || iso() }, ...d.transactions] }));
@@ -409,15 +421,19 @@ export function GymProvider({ children }) {
       const title = transaction.type === "income" ? "Ingreso registrado" : isWithdrawal ? "Retiro de caja" : "Gasto registrado";
       sendNotification(type, title, `${transaction.detail}: $${amount.toLocaleString("es-AR")}.`, branch, "/caja");
     },
-    deleteTransaction: (id) => update((d) => ({ ...d, transactions: d.transactions.filter((transaction) => transaction.id !== id) })),
-    closeCash: (actual) => update((d) => {
+    deleteTransaction: (id) => permissions?.canDelete ? update((d) => ({ ...d, transactions: d.transactions.filter((transaction) => transaction.id !== id) })) : forbidden("Sólo el Admin master puede eliminar movimientos de caja."),
+    closeCash: (actual) => {
+      if (!permissions?.canOperate) return forbidden();
+      return update((d) => {
       const day = d.transactions.filter((t) => t.branch === d.activeBranch && t.date === iso());
       const expected = day.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
       d.closures.unshift({ id: crypto.randomUUID(), branch: d.activeBranch, date: new Date().toISOString(), expected, actual: Number(actual), difference: Number(actual) - expected }); return d;
-    }),
-    clearAccesses: () => update((d) => ({ ...d, accesses: d.accesses.filter((access) => access.branch !== d.activeBranch) })),
-    clearNotificationLog: () => update((d) => ({ ...d, notificationLog: [] })),
+      });
+    },
+    clearAccesses: () => permissions?.canDelete ? update((d) => ({ ...d, accesses: d.accesses.filter((access) => access.branch !== d.activeBranch) })) : forbidden("Sólo el Admin master puede borrar accesos."),
+    clearNotificationLog: () => permissions?.canDelete ? update((d) => ({ ...d, notificationLog: [] })) : forbidden("Sólo el Admin master puede borrar el historial de notificaciones."),
     checkAccess: (query) => {
+      if (!permissions?.canAccessControl) return forbidden();
       const current = dataRef.current;
       const person = current.people.find((p) => p.dni === query || p.id === query);
       const membershipStatus = person ? statusOf(person) : "No encontrado";
@@ -450,6 +466,7 @@ export function GymProvider({ children }) {
       return result;
     },
     allowGuest: () => {
+      if (!permissions?.canAccessControl) return forbidden();
       const current = dataRef.current;
       const branchName = current.branches.find((branch) => branch.id === current.activeBranch)?.name;
       const result = {
