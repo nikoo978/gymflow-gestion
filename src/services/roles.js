@@ -27,6 +27,24 @@ export async function listProfiles() {
   return { profiles: data || [], error };
 }
 
+export async function listProfilesPage({ query = "", role = "todos", limit = 50, offset = 0 } = {}) {
+  if (!supabase) return { profiles: [], total: 0, counts: null, error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_list_accounts_page", {
+    p_query: query,
+    p_role: role,
+    p_limit: limit,
+    p_offset: offset,
+  });
+  return {
+    profiles: data?.rows || [],
+    total: Number(data?.totalFiltered || 0),
+    counts: data?.counts || null,
+    limit: Number(data?.limit || limit),
+    offset: Number(data?.offset || offset),
+    error,
+  };
+}
+
 export async function setUserRoleByEmail(email, role) {
   if (!supabase) return { ok: false, error: new Error("Supabase no configurado") };
   const { data, error } = await supabase.rpc("gf_set_user_role", {
