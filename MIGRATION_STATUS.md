@@ -1,20 +1,20 @@
 # GymFlow · Estado de migraciones
 
-## V.1.03.1 — Cuentas como fuente del vínculo
+## V.1.04 — Biblioteca de ejercicios
 
 Nueva migración:
 
 ```text
-supabase/migrations/20260831_gf_account_links_notifications.sql
+supabase/migrations/20260831_gf_exercise_library_v104.sql
 ```
 
-Si V.1.03 ya está aplicada, no repitas las anteriores.
+Si V.1.03.1 ya está aplicada, ejecutá únicamente esta migración nueva. No repitas las anteriores.
 
 ### Resultado
 
-- Admin/Coadmin ven todas las cuentas PWA registradas.
-- Roles y vínculos se administran desde **Usuarios**.
-- Clientes/Personal dejan de pedir email PWA.
-- Cada registro genera un evento persistente.
-- El Admin master recibe Web Push de nuevas cuentas.
-- Portal Cliente usa vínculo explícito por `person_id`, no coincidencia de emails.
+- Crea `gf_exercises` con RLS.
+- Admin/Coadmin/Profe pueden leer la biblioteca.
+- Profe sólo puede modificar/eliminar sus ejercicios personalizados.
+- Admin/Coadmin pueden editar ejercicios base y personalizados; los ejercicios base no se eliminan desde la UI.
+- Cliente no tiene acceso a la tabla de ejercicios en V.1.04.
+- Incluye ejercicios base iniciales.
