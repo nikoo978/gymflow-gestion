@@ -1,25 +1,33 @@
-# GymFlow V.1.04 · Supabase
+# GymFlow V.1.05 · Supabase
 
-## Actualización desde V.1.03.1
+## Actualización desde V.1.04
 
-Si V.1.03.1 ya está funcionando, ejecutá **una sola vez** en Supabase → SQL Editor:
+V.1.05 agrega dos migraciones:
 
 ```text
-supabase/migrations/20260831_gf_exercise_library_v104.sql
+supabase/migrations/20260901_gf_routines_registration_v105.sql
+supabase/migrations/20260901_gf_routines_v105_indexes.sql
 ```
 
-No repitas las migraciones anteriores.
+En producción ya fueron aplicadas el 1 de septiembre de 2026.
 
-La migración crea `gf_exercises` con RLS y una biblioteca base. Admin/Coadmin/Profe pueden leerla; Cliente no recibe acceso. Los profesores sólo pueden modificar o eliminar ejercicios personalizados creados por su propia cuenta.
+La primera migración agrega DNI a las cuentas PWA, refuerza el alta con nombre completo + DNI, habilita el borrado real de cuentas Auth exclusivamente para el Admin Master y crea el sistema privado de rutinas y asignaciones. La segunda agrega índices de soporte recomendados por el Performance Advisor.
 
-## Base V.1.03.1
+Las tablas de rutinas viven en el esquema `private`; `anon` y `authenticated` no reciben acceso directo. La app usa RPCs `SECURITY DEFINER` con comprobación explícita de rol, identidad y propiedad. Los RPCs nuevos no son ejecutables por `anon`.
 
-La versión anterior ya incorporó:
+## Ejercicios
+
+`gf_exercises` continúa con RLS. En V.1.05 Cliente también puede leer el glosario para construir sus rutinas personales; la creación/edición sigue restringida al staff según rol y autoría.
+
+## Base V.1.03.1 / V.1.04
+
+Se mantienen:
 
 - `gf_account_links`: Cuenta PWA → ficha del gimnasio.
 - `gf_account_events`: eventos persistentes de nuevas cuentas.
 - RPCs de Usuarios, vínculos y portal Cliente.
-- Web Push de nuevas cuentas al Admin master.
+- Web Push de nuevas cuentas al Admin Master.
+- `gf_exercises`: glosario/biblioteca compartida.
 
 ## Instalación desde cero
 
@@ -31,6 +39,8 @@ supabase/migrations/20260831_gf_roles_shared_state.sql
 supabase/migrations/20260831_gf_client_portal.sql
 supabase/migrations/20260831_gf_account_links_notifications.sql
 supabase/migrations/20260831_gf_exercise_library_v104.sql
+supabase/migrations/20260901_gf_routines_registration_v105.sql
+supabase/migrations/20260901_gf_routines_v105_indexes.sql
 ```
 
 No requiere variables nuevas en Vercel.

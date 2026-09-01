@@ -16,10 +16,11 @@ import Notificaciones from "./pages/Notificaciones";
 import Personal from "./pages/Personal";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
 import Reportes from "./pages/Reportes";
+import Routines from "./pages/Routines";
 import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 
-export const APP_VERSION = "V.1.04";
+export const APP_VERSION = "V.1.05";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },
@@ -42,6 +43,7 @@ function ProfessorApp({ currentPath }) {
         <Route path="/" element={<ProfessorDashboard />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/ejercicios" element={<Exercises />} />
+        <Route path="/rutinas" element={<Routines />} />
         <Route path="/accesos" element={<Accesos />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
