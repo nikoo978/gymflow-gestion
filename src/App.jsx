@@ -6,6 +6,7 @@ import AppLayout from "./components/layout/AppLayout";
 import ProfessorLayout from "./components/layout/ProfessorLayout";
 import Accesos from "./pages/Accesos";
 import AccessDisplay from "./pages/AccessDisplay";
+import BiometricReader from "./pages/BiometricReader";
 import Caja from "./pages/Caja";
 import ClientHome from "./pages/ClientHome";
 import Clientes from "./pages/Clientes";
@@ -56,6 +57,7 @@ export default function App() {
   const { role } = useAuth();
 
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
+  if (location.pathname === "/lector-biometrico") return <BiometricReader />;
   if (role === "cliente") return <ClientHome />;
   if (role === "profe") return <ProfessorApp currentPath={location.pathname} />;
 

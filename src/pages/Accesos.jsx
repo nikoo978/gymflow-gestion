@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Delete, DoorOpen, Fingerprint, MonitorUp, Search, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Delete, DoorOpen, Fingerprint, MonitorUp, Radio, Search, Trash2, XCircle } from "lucide-react";
 import { statusOf, useGym } from "../context/GymContext";
 import { useAuth } from "../context/AuthContext";
+import { createReaderChannel } from "../services/accessReader";
 
 const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
 const INPUT_KEY = "gymflow-keypad-input";
 
 export default function Accesos() {
   const { data, checkAccess, clearAccesses, allowGuest } = useGym();
-  const { permissions } = useAuth();
+  const { permissions, user, isOnline } = useAuth();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
+  const [readerConnected, setReaderConnected] = useState(false);
+  const [turnstileOpen, setTurnstileOpen] = useState(false);
   const inputRef = useRef(null);
   const recent = data.accesses.filter((access) => access.branch === data.activeBranch).slice(0, 12);
 
@@ -42,6 +45,24 @@ export default function Accesos() {
   };
 
   const allowManualAccess = () => setResult(allowGuest());
+
+  useEffect(() => {
+    const channel = createReaderChannel(user?.id);
+    if (!channel) return undefined;
+    let closeTimer;
+    channel.on("broadcast", { event: "biometric_scan" }, async ({ payload }) => {
+      if (!payload?.personId || !payload?.requestId) return;
+      const accessResult = checkAccess(payload.personId);
+      setResult(accessResult);
+      if (accessResult.allowed) {
+        setTurnstileOpen(true);
+        window.clearTimeout(closeTimer);
+        closeTimer = window.setTimeout(() => setTurnstileOpen(false), 3000);
+      }
+      await channel.send({ type: "broadcast", event: "access_result", payload: { requestId: payload.requestId, allowed: accessResult.allowed, personName: accessResult.person?.name, denialReason: accessResult.denialReason, checkedAt: accessResult.checkedAt } });
+    }).subscribe((state) => setReaderConnected(state === "SUBSCRIBED"));
+    return () => { window.clearTimeout(closeTimer); channel.unsubscribe(); };
+  }, [user?.id, checkAccess]);
 
   useEffect(() => {
     const handleUsbKeypad = (event) => {
@@ -78,7 +99,12 @@ export default function Accesos() {
           <h1 className="page-title">Control de acceso</h1>
           <p className="page-subtitle">Validación por DNI o futura lectura biométrica.</p>
         </div>
-        <div className="flex flex-wrap gap-2"><button onClick={allowManualAccess} className="btn-primary"><DoorOpen className="size-4" /> Permitir acceso</button><button onClick={openDisplay} className="btn-secondary"><MonitorUp className="size-4" /> Abrir pantalla secundaria</button></div>
+        <div className="flex flex-wrap gap-2"><button onClick={allowManualAccess} className="btn-primary"><DoorOpen className="size-4" /> Permitir acceso</button><a href="/lector-biometrico" target="_blank" rel="noreferrer" className="btn-secondary"><Fingerprint className="size-4" /> Abrir lector Xiaomi</a><button onClick={openDisplay} className="btn-secondary"><MonitorUp className="size-4" /> Abrir pantalla secundaria</button></div>
+      </section>
+
+      <section className={`flex flex-wrap items-center justify-between gap-4 rounded-[20px] border p-4 ${turnstileOpen ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+        <div className="flex items-center gap-3"><span className={`grid size-11 place-items-center rounded-full ${turnstileOpen ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}><DoorOpen className="size-5" /></span><div><p className="font-black">{turnstileOpen ? "MOLINETE ABIERTO" : "Molinete cerrado"}</p><p className="text-xs text-slate-500">{turnstileOpen ? "Cierre automático en 3 segundos" : "Esperando un acceso permitido"}</p></div></div>
+        <span className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black ${readerConnected && isOnline ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}><Radio className="size-4" />{readerConnected && isOnline ? "Lector remoto conectado" : "Conectando lector remoto"}</span>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[.8fr_.7fr_1.2fr]">
