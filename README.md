@@ -1,36 +1,29 @@
-# GymFlow / Infytter Fitness · V.1.03.1
+# GymFlow / Infytter Fitness · V.1.04
 
-Corrección de flujo de usuarios antes de avanzar con V.1.04.
+Versión enfocada en **biblioteca de ejercicios** y separación visual estricta por rol.
 
-## Usuarios
+## Interfaces
 
-- Admin/Coadmin ven **todos los emails registrados** en la PWA.
-- Cada cuenta nueva aparece en Usuarios aunque todavía no tenga ficha vinculada.
-- El rol se cambia desde la misma tabla.
-- El vínculo ahora parte de la **cuenta PWA** y apunta a una ficha existente de Cliente o Profesor.
-- Una ficha no puede quedar vinculada a dos cuentas distintas.
-- Cambiar a `Coadmin` elimina el vínculo personal; cambiar entre `Cliente` y `Profe` invalida vínculos incompatibles.
-- El Admin master sigue siendo único y protegido.
+- **Admin/Coadmin:** panel administrativo completo.
+- **Profe:** interfaz propia con Inicio, Alumnos, Ejercicios y Accesos; sin caja, reportes financieros, usuarios ni configuración global.
+- **Cliente:** portal PWA mobile-first aislado del estado global y resuelto mediante su vínculo de cuenta.
+- **Admin/Coadmin:** pueden abrir **Vista previa** para revisar cómo se ven los portales de Profesor y Cliente sin cambiar el rol real de la sesión.
 
-## Avisos de registro
+## Biblioteca de ejercicios
 
-- Cada alta de cuenta crea un evento persistente en Supabase.
-- El Admin master recibe Web Push `Nueva cuenta PWA` si tiene notificaciones activadas.
-- La campana mezcla estos eventos con los eventos operativos y muestra los últimos 10.
-- La lista de Usuarios se refresca automáticamente cada 15 segundos.
+- Grupos musculares y categorías.
+- Imagen y video mediante URL.
+- Series, repeticiones y descanso por defecto.
+- Ejercicios base iniciales.
+- Ejercicios personalizados compartidos con el equipo.
+- RLS: Cliente sin acceso; Profe sólo administra sus personalizados; Admin/Coadmin gestionan la biblioteca.
 
-## Clientes / Profesores
-
-- Se eliminó el campo manual `Email PWA` de Clientes y Personal.
-- El portal Cliente se resuelve mediante `gf_account_links`.
-- El flujo correcto es: **registro de email → Usuarios → elegir rol → vincular ficha**.
-
-## Migración desde V.1.03
+## Migración desde V.1.03.1
 
 Ejecutá una sola vez:
 
 ```text
-supabase/migrations/20260831_gf_account_links_notifications.sql
+supabase/migrations/20260831_gf_exercise_library_v104.sql
 ```
 
 No requiere variables nuevas en Vercel.
