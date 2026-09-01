@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { APP_VERSION, navigation } from "../../App";
 import { useGym } from "../../context/GymContext";
 import { useAuth } from "../../context/AuthContext";
-import { ROLE_LABELS } from "../../services/roles";
+import { listAccountEvents, ROLE_LABELS } from "../../services/roles";
 
 const notificationTone = (type) => {
   if (["deniedAccess", "membershipExpired", "expense", "withdrawal"].includes(type)) return "border-red-100 bg-red-50/70";
   if (["membershipExpiring"].includes(type)) return "border-amber-100 bg-amber-50/70";
-  if (["income", "newClient"].includes(type)) return "border-emerald-100 bg-emerald-50/70";
+  if (["income", "newClient", "newAccount"].includes(type)) return "border-emerald-100 bg-emerald-50/70";
   if (["clientAccess", "staffAccess", "manualAccess"].includes(type)) return "border-sky-100 bg-sky-50/70";
   return "border-slate-100 bg-slate-50/80";
 };
@@ -42,10 +42,19 @@ function Nav({ currentPath, onNavigate, onSync }) {
   </>;
 }
 
-function NotificationsMenu({ data, canOpenAll }) {
+function NotificationsMenu({ data, canOpenAll, accountEvents = [] }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
-  const latest = (data.notificationLog || []).slice(0, 10);
+  const latest = [
+    ...(data.notificationLog || []),
+    ...accountEvents.map((event) => ({
+      id: `account-${event.id}`,
+      type: "newAccount",
+      title: "Nueva cuenta PWA",
+      body: `${event.display_name || event.email?.split("@")[0] || "Usuario"} · ${event.email || ""}`,
+      date: event.created_at,
+    })),
+  ].filter((item) => item?.date).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
 
   useEffect(() => {
     const close = (event) => { if (open && boxRef.current && !boxRef.current.contains(event.target)) setOpen(false); };
@@ -76,7 +85,20 @@ export default function AppLayout({ currentPath, children }) {
   const { data, setBranch, sync, pendingCount, syncPendingNow } = useGym();
   const { role, permissions, isCloud, isLocal, isOnline, canUseLocalMode, requestLocalMode } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountEvents, setAccountEvents] = useState([]);
   const now = new Date();
+
+  useEffect(() => {
+    let active = true;
+    if (!permissions?.canManageRoles || !isCloud) { setAccountEvents([]); return undefined; }
+    const load = async () => {
+      const result = await listAccountEvents(10).catch(() => ({ events: [] }));
+      if (active && !result.error) setAccountEvents(result.events || []);
+    };
+    load();
+    const timer = setInterval(load, 20000);
+    return () => { active = false; clearInterval(timer); };
+  }, [permissions?.canManageRoles, isCloud]);
   const syncIcon = isCloud && sync === "Sincronizado" ? <Cloud className="size-3.5 text-[#E30613]" /> : isLocal ? <HardDrive className="size-3.5 text-[#E30613]" /> : <CloudOff className="size-3.5 text-[#9E0710]" />;
 
   return <div className="min-h-svh bg-[#F5F5F5] md:flex">
@@ -89,7 +111,7 @@ export default function AppLayout({ currentPath, children }) {
           {isCloud && canUseLocalMode && <button onClick={requestLocalMode} className="hidden items-center gap-1.5 rounded-full border border-black/8 bg-white px-3 py-1.5 text-[11px] font-black text-slate-600 shadow-sm md:inline-flex"><ShieldCheck className="size-3.5 text-[#E30613]" /> Modo local</button>}
           {isLocal && <button onClick={syncPendingNow} className="hidden items-center gap-1.5 rounded-full bg-[#050505] px-3 py-1.5 text-[11px] font-black text-white shadow-sm md:inline-flex"><RefreshCw className="size-3.5 text-[#E30613]" /> Sincronizar{pendingCount ? ` (${pendingCount})` : ""}</button>}
           <span className="hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 shadow-sm sm:flex">{syncIcon}{sync}</span>
-          <NotificationsMenu data={data} canOpenAll={permissions?.canManageNotifications} />
+          <NotificationsMenu data={data} canOpenAll={permissions?.canManageNotifications} accountEvents={accountEvents} />
           <div className="hidden text-right sm:block"><p className="text-sm font-bold capitalize text-[#050505]">{now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" })}</p><p className="text-xs text-slate-500">{isCloud ? ROLE_LABELS[role] || role : "Modo local protegido"}</p></div>
         </div>
       </header>

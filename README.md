@@ -1,49 +1,36 @@
-# GymFlow / Infytter Fitness · V.1.03
+# GymFlow / Infytter Fitness · V.1.03.1
 
-Versión enfocada en **usuarios, roles e interfaces diferenciadas**.
+Corrección de flujo de usuarios antes de avanzar con V.1.04.
 
-## V.1.03
+## Usuarios
 
-### Admin master
+- Admin/Coadmin ven **todos los emails registrados** en la PWA.
+- Cada cuenta nueva aparece en Usuarios aunque todavía no tenga ficha vinculada.
+- El rol se cambia desde la misma tabla.
+- El vínculo ahora parte de la **cuenta PWA** y apunta a una ficha existente de Cliente o Profesor.
+- Una ficha no puede quedar vinculada a dos cuentas distintas.
+- Cambiar a `Coadmin` elimina el vínculo personal; cambiar entre `Cliente` y `Profe` invalida vínculos incompatibles.
+- El Admin master sigue siendo único y protegido.
 
-- Continúa siendo único e inalterable.
-- Ve la nueva sección **Usuarios** con todas las cuentas creadas en la PWA.
-- Puede cambiar cualquier cuenta no-master entre `Cliente`, `Profe` y `Coadmin`.
-- Mantiene todos los permisos operativos, financieros, notificaciones y modo local de emergencia.
+## Avisos de registro
 
-### Coadmin
+- Cada alta de cuenta crea un evento persistente en Supabase.
+- El Admin master recibe Web Push `Nueva cuenta PWA` si tiene notificaciones activadas.
+- La campana mezcla estos eventos con los eventos operativos y muestra los últimos 10.
+- La lista de Usuarios se refresca automáticamente cada 15 segundos.
 
-- Puede administrar roles y operar el sistema.
-- No puede eliminar datos críticos ni modificar/eliminar al Admin master.
+## Clientes / Profesores
 
-### Profe
+- Se eliminó el campo manual `Email PWA` de Clientes y Personal.
+- El portal Cliente se resuelve mediante `gf_account_links`.
+- El flujo correcto es: **registro de email → Usuarios → elegir rol → vincular ficha**.
 
-- Dashboard propio.
-- Ve alumnos, estados de membresía, vencimientos y accesos.
-- Puede operar el control de acceso.
-- No recibe caja, cierres financieros ni administración de usuarios.
+## Migración desde V.1.03
 
-### Cliente
-
-- Portal móvil propio.
-- Ve su plan, estado, vencimiento, sede, método de acceso y últimos accesos.
-- Para vincular la cuenta, el administrador debe cargar en la ficha del cliente exactamente el mismo email usado para registrarse en la PWA.
-- Supabase expone sólo la ficha y accesos de ese cliente; no recibe el estado global del gimnasio.
-
-## Migraciones
-
-Si V.1.02 ya está funcionando, ejecutá **sólo**:
+Ejecutá una sola vez:
 
 ```text
-supabase/migrations/20260831_gf_client_portal.sql
-```
-
-Si instalás desde cero, ejecutá en orden:
-
-```text
-supabase/migrations/20260830_gf_user_state_rls.sql
-supabase/migrations/20260831_gf_roles_shared_state.sql
-supabase/migrations/20260831_gf_client_portal.sql
+supabase/migrations/20260831_gf_account_links_notifications.sql
 ```
 
 No requiere variables nuevas en Vercel.

@@ -1,5 +1,5 @@
-const SW_VERSION = "gymflow-push-v10";
-const CACHE_NAME = "gymflow-shell-v10";
+const SW_VERSION = "gymflow-push-v1-03-1";
+const CACHE_NAME = "gymflow-shell-v1-03-1";
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
@@ -14,8 +14,6 @@ async function cacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
   await Promise.allSettled(CORE_ASSETS.map((url) => cache.add(url)));
 
-  // Vite genera nombres con hash. Descubrimos los assets desde el HTML para
-  // que una PC que ya abrió GymFlow pueda volver a arrancar sin Internet.
   try {
     const response = await fetch("/", { cache: "no-store" });
     if (!response.ok) return;
@@ -29,9 +27,7 @@ async function cacheAppShell() {
       if (url.origin === self.location.origin && (url.pathname.startsWith("/assets/") || /\.(?:js|css|woff2?|png|svg)$/i.test(url.pathname))) urls.add(url.pathname + url.search);
     }
     await Promise.allSettled([...urls].map((url) => cache.add(url)));
-  } catch {
-    // La instalación no falla si algún asset secundario no está disponible.
-  }
+  } catch {}
 }
 
 self.addEventListener("install", (event) => {
@@ -52,10 +48,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
-
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
@@ -73,7 +67,6 @@ self.addEventListener("fetch", (event) => {
     })());
     return;
   }
-
   event.respondWith((async () => {
     const cached = await caches.match(request);
     if (cached) return cached;
@@ -88,12 +81,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = {};
-  try {
-    payload = event.data?.json?.() || {};
-  } catch {
-    payload = { body: event.data?.text?.() || "" };
-  }
-
+  try { payload = event.data?.json?.() || {}; } catch { payload = { body: event.data?.text?.() || "" }; }
   const options = {
     body: payload.body || "Tenés una nueva notificación.",
     icon: "/icons/icon-192.png",
@@ -101,22 +89,15 @@ self.addEventListener("push", (event) => {
     tag: payload.tag || payload.type || `infytter-${Date.now()}`,
     renotify: true,
     vibrate: [180, 100, 180],
-    data: {
-      url: payload.url || "/",
-      type: payload.type || null,
-      swVersion: SW_VERSION,
-      ...(payload.data || {}),
-    },
+    data: { url: payload.url || "/", type: payload.type || null, swVersion: SW_VERSION, ...(payload.data || {}) },
     actions: [{ action: "open", title: "Abrir" }],
   };
-
   event.waitUntil(self.registration.showNotification(payload.title || "Infytter Fitness", options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
-
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of windows) {

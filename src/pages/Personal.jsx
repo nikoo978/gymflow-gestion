@@ -10,7 +10,6 @@ function StaffForm({ person, onSubmit, error }) {
   return <form onSubmit={onSubmit} className="grid gap-4">
     <label>Nombre completo<input name="name" required defaultValue={person?.name} className={field} /></label>
     <label>DNI<input name="dni" required inputMode="numeric" pattern="[0-9]+" defaultValue={person?.dni} className={field} /></label>
-    <label>Email PWA<input name="email" type="email" defaultValue={person?.email || ""} placeholder="profe@gmail.com" className={field} /></label>
     <label>Teléfono<input name="phone" defaultValue={person?.phone} className={field} /></label>
     <label>Dato biométrico<select name="biometricMethod" defaultValue={person?.biometricMethod || "Sin registrar"} className={field}><option>Sin registrar</option><option>Huella</option><option>Reconocimiento facial</option></select></label>
     {error && <p className="text-sm font-bold text-red-600">{error}</p>}
@@ -29,7 +28,6 @@ export default function Personal() {
   const valuesFrom = (form) => ({
     name: form.get("name").trim(),
     dni: form.get("dni").trim(),
-    email: String(form.get("email") || "").trim().toLowerCase(),
     phone: form.get("phone").trim(),
     biometricMethod: form.get("biometricMethod"),
     biometricStatus: form.get("biometricMethod") === "Sin registrar" ? "Pendiente" : "Listo para vincular",
@@ -51,7 +49,7 @@ export default function Personal() {
   return <div className="mx-auto max-w-[1480px] space-y-6">
     <section className="page-head"><div><p className="eyebrow">Equipo</p><h1 className="page-title">Profesores</h1><p className="page-subtitle">Personal operativo. Las cuentas y roles PWA se administran desde Usuarios.</p></div>{permissions?.canOperate && <button onClick={() => { setError(""); setOpen(true); }} className="btn-primary"><Plus className="size-4" /> Nuevo profesor</button>}</section>
     <section><div className="mb-4 flex items-center gap-2"><UsersRound className="size-5 text-[#E30613]" /><h2 className="section-title">Profesores registrados en la sede</h2></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {staff.map((person) => <article key={person.id} className="panel"><div className="flex items-start justify-between"><span className="grid size-12 place-items-center rounded-2xl bg-red-50 text-[#E30613]"><UserCog className="size-6" /></span><div className="flex gap-2">{permissions?.canOperate && <button onClick={() => { setError(""); setEditing(person); }} aria-label={`Editar a ${person.name}`} className="text-slate-500"><Pencil className="size-4" /></button>}{permissions?.canDelete && <button onClick={() => remove(person)} aria-label={`Eliminar a ${person.name}`} className="text-[#9E0710]"><Trash2 className="size-4" /></button>}</div></div><h2 className="mt-5 text-lg font-black text-[#050505]">{person.name}</h2><p className="mt-1 text-sm text-slate-500">DNI {person.dni}</p><p className="mt-1 text-xs font-bold text-slate-400">{person.email || "Sin cuenta PWA vinculada"}</p><p className="mt-2 text-xs font-bold text-slate-400">{person.biometricMethod || "Sin dato biométrico"}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="status status-ok">Acceso libre</span><span className="text-xs text-slate-400">{person.phone}</span></div></article>)}
+      {staff.map((person) => <article key={person.id} className="panel"><div className="flex items-start justify-between"><span className="grid size-12 place-items-center rounded-2xl bg-red-50 text-[#E30613]"><UserCog className="size-6" /></span><div className="flex gap-2">{permissions?.canOperate && <button onClick={() => { setError(""); setEditing(person); }} aria-label={`Editar a ${person.name}`} className="text-slate-500"><Pencil className="size-4" /></button>}{permissions?.canDelete && <button onClick={() => remove(person)} aria-label={`Eliminar a ${person.name}`} className="text-[#9E0710]"><Trash2 className="size-4" /></button>}</div></div><h2 className="mt-5 text-lg font-black text-[#050505]">{person.name}</h2><p className="mt-1 text-sm text-slate-500">DNI {person.dni}</p><p className="mt-1 text-xs font-bold text-slate-400">Cuenta PWA: vincular desde Usuarios</p><p className="mt-2 text-xs font-bold text-slate-400">{person.biometricMethod || "Sin dato biométrico"}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="status status-ok">Acceso libre</span><span className="text-xs text-slate-400">{person.phone}</span></div></article>)}
       {!staff.length && <p className="panel text-sm text-slate-400">No hay personal en esta sede.</p>}
     </div></section>
     <FormDialog open={open} onOpenChange={(value) => { setOpen(value); setError(""); }} title="Nuevo profesor" description="Quedará habilitado sin vencimiento."><StaffForm onSubmit={submit} error={error} /></FormDialog>

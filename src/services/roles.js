@@ -23,11 +23,7 @@ export async function getMyProfile() {
 
 export async function listProfiles() {
   if (!supabase) return { profiles: [], error: new Error("Supabase no configurado") };
-  const { data, error } = await supabase
-    .from("gf_profiles")
-    .select("user_id,email,display_name,role,is_master,created_at,updated_at")
-    .order("is_master", { ascending: false })
-    .order("created_at", { ascending: true });
+  const { data, error } = await supabase.rpc("gf_list_accounts");
   return { profiles: data || [], error };
 }
 
@@ -38,6 +34,28 @@ export async function setUserRoleByEmail(email, role) {
     new_role: role,
   });
   return { ok: !error, profile: data || null, error };
+}
+
+export async function setAccountLink(userId, personId, kind) {
+  if (!supabase) return { ok: false, error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_set_account_link", {
+    target_user_id: userId,
+    target_person_id: personId,
+    target_kind: kind,
+  });
+  return { ok: !error, result: data || null, error };
+}
+
+export async function unlinkAccount(userId) {
+  if (!supabase) return { ok: false, error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_unlink_account", { target_user_id: userId });
+  return { ok: !error, result: data, error };
+}
+
+export async function listAccountEvents(limit = 10) {
+  if (!supabase) return { events: [], error: new Error("Supabase no configurado") };
+  const { data, error } = await supabase.rpc("gf_list_account_events", { p_limit: limit });
+  return { events: data || [], error };
 }
 
 export async function getMyClientPortal() {

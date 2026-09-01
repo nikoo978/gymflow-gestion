@@ -26,6 +26,27 @@ export const supabase = supabaseConfigured
     })
   : null;
 
+// El alta de una cuenta debe avisar al Admin master incluso cuando Supabase
+// exige confirmación de email y todavía no entrega una sesión al usuario.
+// El endpoint sólo acepta userId+email que Supabase pueda verificar mediante
+// una RPC security-definer y nunca confía en datos de gimnasio enviados aquí.
+if (supabase?.auth?.signUp) {
+  const originalSignUp = supabase.auth.signUp.bind(supabase.auth);
+  supabase.auth.signUp = async (...args) => {
+    const result = await originalSignUp(...args);
+    const created = result?.data?.user;
+    if (created?.id && created?.email && !result?.error) {
+      fetch("/api/account-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ userId: created.id, email: created.email }),
+        keepalive: true,
+      }).catch(() => undefined);
+    }
+    return result;
+  };
+}
+
 export const getSupabasePublicConfig = () => ({
   url: supabaseUrl || "",
   projectRef: EXPECTED_PROJECT_REF,

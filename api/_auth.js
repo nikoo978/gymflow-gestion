@@ -2,7 +2,7 @@ const EXPECTED_PROJECT_REF = "ubfqwmhxkjtqdcfnsmwe";
 const DEFAULT_SUPABASE_URL = `https://${EXPECTED_PROJECT_REF}.supabase.co`;
 const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZnF3bWh4a2p0cWRjZm5zbXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTAxODEsImV4cCI6MjA5NTE2NjE4MX0.03WBL3APZucAM1-ufuSgEbuXyYjmM0keDAjG4FRtfVo";
 
-function publicSupabaseConfig() {
+export function publicSupabaseConfig() {
   const envUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim().replace(/\/$/, "");
   const envKey = String(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "").trim();
   const envMatchesProject = Boolean(envUrl && envKey && envUrl.includes(EXPECTED_PROJECT_REF));

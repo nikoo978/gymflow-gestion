@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 
 const DEFAULT_PREFERENCES = {
+  newAccount: true,
   newClient: true,
   income: true,
   withdrawal: true,
@@ -218,8 +219,6 @@ export async function enablePushNotifications(preferences = DEFAULT_PREFERENCES)
     throw new Error("En iPhone/iPad primero instalá Infytter en la pantalla de inicio y abrila desde allí.");
   }
 
-  // Comprobamos el backend ANTES de pedir permiso. Así un problema de deploy o
-  // variables de entorno no deja al usuario con un permiso concedido pero sin Push.
   const config = await getPushDiagnostics();
   const publicKey = String(config.vapidPublicKey || config.publicKey || "").trim();
   if (!config.configuredForImmediatePush || !publicKey) {
@@ -233,8 +232,6 @@ export async function enablePushNotifications(preferences = DEFAULT_PREFERENCES)
   const expectedKey = base64ToUint8Array(publicKey);
   let subscription = await withTimeout(reg.pushManager.getSubscription(), 3000, "No se pudo consultar la suscripción Push.");
 
-  // Si se rotaron las claves VAPID, una suscripción vieja queda asociada a la
-  // clave anterior y los servicios Push pueden rechazarla. La renovamos aquí.
   if (subscription?.options?.applicationServerKey && !sameBytes(subscription.options.applicationServerKey, expectedKey)) {
     await subscription.unsubscribe().catch(() => undefined);
     subscription = null;
@@ -325,6 +322,19 @@ export async function cancelMembershipNotifications(personId) {
     method: "POST",
     body: JSON.stringify({ action: "cancel", person: { id: personId } }),
   });
+}
+
+export async function notifyAdminAccountRegistration(userId, email) {
+  if (!userId || !email) return { ok: false, ignored: true };
+  return withTimeout(
+    publicApiFetch("/api/account-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, email }),
+    }),
+    8000,
+    "No se pudo avisar al administrador sobre el registro."
+  );
 }
 
 export { DEFAULT_PREFERENCES };

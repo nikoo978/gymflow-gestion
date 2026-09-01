@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, ShieldCheck, UserCheck, UserCog, UsersRound } from "lucide-react";
+import { Link2, RefreshCw, Search, ShieldCheck, Unlink, UserCheck, UserCog, UsersRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useGym } from "../context/GymContext";
-import { listProfiles, ROLE_LABELS, setUserRoleByEmail } from "../services/roles";
+import { listProfiles, ROLE_LABELS, setAccountLink, setUserRoleByEmail, unlinkAccount } from "../services/roles";
 
 const roleTone = (role) => role === "admin" ? "status-bad" : role === "coadmin" ? "status-warn" : role === "profe" ? "status-ok" : "bg-slate-100 text-slate-600";
 
@@ -25,26 +25,28 @@ export default function Usuarios() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => { if (active) await load(); };
+    refresh();
+    const timer = setInterval(refresh, 15000);
+    return () => { active = false; clearInterval(timer); };
+  }, []);
 
-  const linkedByEmail = useMemo(() => {
-    const map = new Map();
-    (data.people || []).forEach((person) => {
-      const email = String(person.email || "").trim().toLowerCase();
-      if (email) map.set(email, person);
-    });
-    return map;
-  }, [data.people]);
+  const peopleById = useMemo(() => new Map((data.people || []).map((person) => [String(person.id), person])), [data.people]);
+  const branchById = useMemo(() => new Map((data.branches || []).map((branch) => [String(branch.id), branch.name])), [data.branches]);
+  const occupiedPersonIds = useMemo(() => new Set(profiles.map((profile) => profile.linked_person_id).filter(Boolean).map(String)), [profiles]);
 
   const visible = useMemo(() => profiles.filter((profile) => {
     if (filter !== "todos" && profile.role !== filter) return false;
-    const text = `${profile.display_name || ""} ${profile.email || ""} ${ROLE_LABELS[profile.role] || profile.role}`.toLowerCase();
+    const linked = profile.linked_person_id ? peopleById.get(String(profile.linked_person_id)) : null;
+    const text = `${profile.display_name || ""} ${profile.email || ""} ${ROLE_LABELS[profile.role] || profile.role} ${linked?.name || ""}`.toLowerCase();
     return text.includes(query.trim().toLowerCase());
-  }), [profiles, query, filter]);
+  }), [profiles, query, filter, peopleById]);
 
   const counts = useMemo(() => ({
     total: profiles.length,
-    coadmin: profiles.filter((item) => item.role === "coadmin").length,
+    unlinked: profiles.filter((item) => !item.is_master && item.role !== "coadmin" && !item.linked_person_id).length,
     profe: profiles.filter((item) => item.role === "profe").length,
     cliente: profiles.filter((item) => item.role === "cliente").length,
   }), [profiles]);
@@ -55,46 +57,79 @@ export default function Usuarios() {
     const result = await setUserRoleByEmail(profile.email, nextRole);
     if (!result.ok) setError(result.error?.message || "No se pudo cambiar el rol.");
     else {
-      setMessage(`${profile.email} ahora es ${ROLE_LABELS[nextRole]}. El cambio se aplica en su próximo refresco/inicio de sesión.`);
+      setMessage(`${profile.email} ahora es ${ROLE_LABELS[nextRole]}.`);
       await load();
       if (profile.user_id === user?.id) await refreshProfile(user.id);
     }
     setSaving("");
   };
 
+  const changeLink = async (profile, personId) => {
+    setSaving(profile.user_id); setError(""); setMessage("");
+    if (!personId) {
+      const result = await unlinkAccount(profile.user_id);
+      if (!result.ok) setError(result.error?.message || "No se pudo desvincular la cuenta.");
+      else setMessage(`${profile.email} quedó sin ficha vinculada.`);
+    } else {
+      const result = await setAccountLink(profile.user_id, personId, profile.role);
+      if (!result.ok) setError(result.error?.message || "No se pudo vincular la cuenta.");
+      else setMessage(`${profile.email} quedó vinculado a ${result.result?.personName || "la ficha seleccionada"}.`);
+    }
+    await load();
+    setSaving("");
+  };
+
+  const candidatesFor = (profile) => {
+    const wantedRole = profile.role === "profe" ? "Profesor" : "Cliente";
+    return (data.people || [])
+      .filter((person) => person.role === wantedRole)
+      .filter((person) => !occupiedPersonIds.has(String(person.id)) || String(profile.linked_person_id || "") === String(person.id))
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es"));
+  };
+
   if (!permissions?.canManageRoles) return null;
 
   return <div className="mx-auto max-w-[1480px] space-y-6">
-    <section className="page-head"><div><p className="eyebrow">Seguridad</p><h1 className="page-title">Usuarios y roles</h1><p className="page-subtitle">Todas las cuentas creadas en la PWA y sus permisos. Sólo existe un Admin master.</p></div><button onClick={load} disabled={loading} className="btn-secondary"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Actualizar</button></section>
+    <section className="page-head"><div><p className="eyebrow">Seguridad</p><h1 className="page-title">Usuarios y roles</h1><p className="page-subtitle">Todas las cuentas registradas en la PWA. El vínculo con Clientes o Profesores se hace exclusivamente desde este email.</p></div><button onClick={load} disabled={loading} className="btn-secondary"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Actualizar</button></section>
 
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="panel"><UsersRound className="size-5 text-[#E30613]" /><p className="mt-3 text-3xl font-black">{counts.total}</p><p className="text-xs font-bold text-slate-500">Cuentas registradas</p></div>
-      <div className="panel"><ShieldCheck className="size-5 text-amber-600" /><p className="mt-3 text-3xl font-black">{counts.coadmin}</p><p className="text-xs font-bold text-slate-500">Coadmins</p></div>
+      <div className="panel"><UsersRound className="size-5 text-[#E30613]" /><p className="mt-3 text-3xl font-black">{counts.total}</p><p className="text-xs font-bold text-slate-500">Emails registrados</p></div>
+      <div className="panel"><Link2 className="size-5 text-amber-600" /><p className="mt-3 text-3xl font-black">{counts.unlinked}</p><p className="text-xs font-bold text-slate-500">Pendientes de vincular</p></div>
       <div className="panel"><UserCog className="size-5 text-emerald-600" /><p className="mt-3 text-3xl font-black">{counts.profe}</p><p className="text-xs font-bold text-slate-500">Profes</p></div>
       <div className="panel"><UserCheck className="size-5 text-slate-500" /><p className="mt-3 text-3xl font-black">{counts.cliente}</p><p className="text-xs font-bold text-slate-500">Clientes</p></div>
     </section>
 
     <section className="panel">
       <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-        <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-[#E30613]/15"><Search className="size-4 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar por nombre, email o rol" /></label>
+        <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-[#E30613]/15"><Search className="size-4 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar email, nombre, rol o ficha vinculada" /></label>
         <select value={filter} onChange={(event) => setFilter(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black outline-none"><option value="todos">Todos los roles</option><option value="admin">Admin master</option><option value="coadmin">Coadmin</option><option value="profe">Profe</option><option value="cliente">Cliente</option></select>
       </div>
       {message && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{message}</p>}
       {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{error}</p>}
 
-      <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[940px] text-left"><thead><tr className="table-head"><th>Cuenta</th><th>Rol</th><th>Vínculo gimnasio</th><th>Registro</th><th className="text-right">Permisos</th></tr></thead><tbody className="divide-y divide-slate-100">
+      <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[1080px] text-left"><thead><tr className="table-head"><th>Cuenta PWA</th><th>Rol</th><th>Vincular desde esta cuenta</th><th>Registro</th><th className="text-right">Estado</th></tr></thead><tbody className="divide-y divide-slate-100">
         {visible.map((profile) => {
-          const linked = linkedByEmail.get(String(profile.email || "").toLowerCase());
+          const linked = profile.linked_person_id ? peopleById.get(String(profile.linked_person_id)) : null;
+          const candidates = ["cliente", "profe"].includes(profile.role) ? candidatesFor(profile) : [];
           return <tr key={profile.user_id}>
-            <td className="py-4"><p className="font-bold text-slate-800">{profile.display_name || profile.email.split("@")[0]} {profile.is_master && <span className="ml-2 rounded-full bg-red-50 px-2 py-1 text-[10px] font-black uppercase text-[#E30613]">Master</span>}</p><p className="text-xs text-slate-400">{profile.email}</p></td>
-            <td><span className={`status ${roleTone(profile.role)}`}>{ROLE_LABELS[profile.role] || profile.role}</span></td>
-            <td>{linked ? <div><p className="text-sm font-bold text-slate-700">{linked.name}</p><p className="text-xs text-emerald-600">Vinculado como {linked.role}</p></div> : <span className="text-xs font-bold text-slate-400">Sin ficha vinculada</span>}</td>
+            <td className="py-4"><p className="font-bold text-slate-800">{profile.display_name || profile.email.split("@")[0]} {profile.is_master && <span className="ml-2 rounded-full bg-red-50 px-2 py-1 text-[10px] font-black uppercase text-[#E30613]">Master</span>}</p><p className="text-xs font-bold text-slate-500">{profile.email}</p></td>
+            <td><select value={profile.role} onChange={(event) => changeRole(profile, event.target.value)} disabled={profile.is_master || saving === profile.user_id} className={`h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black outline-none disabled:opacity-60 ${profile.is_master ? "pointer-events-none" : ""}`}><option value="admin" disabled>Admin master</option><option value="cliente">Cliente</option><option value="profe">Profe</option><option value="coadmin">Coadmin</option></select></td>
+            <td className="py-3">
+              {profile.is_master ? <span className="text-xs font-bold text-slate-400">No requiere vínculo</span> : profile.role === "coadmin" ? <span className="text-xs font-bold text-slate-400">Coadmin · sin ficha personal</span> : <div className="min-w-[310px]">
+                <select value={profile.linked_person_id || ""} onChange={(event) => changeLink(profile, event.target.value)} disabled={saving === profile.user_id} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black outline-none disabled:opacity-50">
+                  <option value="">Sin vincular</option>
+                  {candidates.map((person) => <option key={person.id} value={person.id}>{person.name} · DNI {person.dni || "—"} · {branchById.get(String(person.branch)) || "Sin sede"}</option>)}
+                </select>
+                {linked && <p className="mt-1 text-[11px] font-bold text-emerald-600">Vinculado a {linked.name} · {linked.role}</p>}
+                {!linked && <p className="mt-1 text-[11px] font-bold text-amber-600">Elegí una ficha existente del gimnasio.</p>}
+              </div>}
+            </td>
             <td className="text-sm text-slate-500">{new Date(profile.created_at).toLocaleDateString("es-AR")}</td>
-            <td className="text-right">{profile.is_master ? <span className="text-xs font-bold text-slate-400">Protegido</span> : <select value={profile.role} onChange={(event) => changeRole(profile, event.target.value)} disabled={saving === profile.user_id} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black outline-none disabled:opacity-50"><option value="cliente">Cliente</option><option value="profe">Profe</option><option value="coadmin">Coadmin</option></select>}</td>
+            <td className="text-right">{profile.is_master ? <span className="status status-bad">Protegido</span> : linked ? <span className="status status-ok"><Link2 className="mr-1 inline size-3" /> Vinculado</span> : profile.role === "coadmin" ? <span className={`status ${roleTone(profile.role)}`}>{ROLE_LABELS[profile.role]}</span> : <span className="status status-warn"><Unlink className="mr-1 inline size-3" /> Pendiente</span>}</td>
           </tr>;
         })}
       </tbody></table>{!visible.length && !loading && <p className="py-10 text-center text-sm text-slate-400">No hay cuentas que coincidan con el filtro.</p>}</div>
-      <p className="mt-4 text-xs leading-5 text-slate-400">Para que un Cliente o Profe vea su ficha personal, cargá el mismo email de su cuenta PWA en Clientes o Personal.</p>
+      <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500"><ShieldCheck className="mr-1 inline size-4 text-[#E30613]" /> El email pertenece a la cuenta PWA. Primero se registra la persona; después Admin/Coadmin la vincula aquí con una ficha Cliente o Profesor ya existente. Ya no hace falta escribir emails dentro de Clientes o Personal.</div>
     </section>
   </div>;
 }

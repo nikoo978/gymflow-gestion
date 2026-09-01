@@ -16,7 +16,7 @@ import Reportes from "./pages/Reportes";
 import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 
-export const APP_VERSION = "V.1.03";
+export const APP_VERSION = "V.1.03.1";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin", "profe"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin", "profe"] },
@@ -33,13 +33,10 @@ export const productMeta = { name: "Infytter Fitness", icon: Dumbbell, branchIco
 export default function App() {
   const location = useLocation();
   const { role } = useAuth();
-
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
   if (role === "cliente") return <ClientHome />;
-
   const allowed = (path) => navigation.find((item) => item.path === path)?.roles.includes(role);
   const fallback = "/";
-
   return (
     <AppLayout currentPath={location.pathname}>
       <Routes>

@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { deliveryKey, getSubscriptions, redis, subscriptionsKey } from "./_redis.js";
 
 export const DEFAULT_PREFERENCES = {
+  newAccount: true,
   newClient: true,
   income: true,
   withdrawal: true,
@@ -104,7 +105,7 @@ export async function sendPush({ userId, type, title, body, url = "/", tag, targ
     if (device?.userId !== userId) { results.skipped += 1; return; }
     if (targetHash && hash !== targetHash) { results.skipped += 1; return; }
 
-    const enabled = device?.preferences?.[type] ?? DEFAULT_PREFERENCES[type] ?? true;
+    const enabled = type === "newAccount" ? true : (device?.preferences?.[type] ?? DEFAULT_PREFERENCES[type] ?? true);
     if (!enabled) { results.skipped += 1; return; }
 
     let subscription;
