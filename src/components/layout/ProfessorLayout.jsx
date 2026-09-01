@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell, Fingerprint, LayoutDashboard, LogOut, UsersRound } from "lucide-react";
+import { ClipboardList, Dumbbell, Fingerprint, LayoutDashboard, LogOut, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { APP_VERSION } from "../../App";
 import { useAuth } from "../../context/AuthContext";
@@ -10,6 +10,7 @@ const professorNavigation = [
   { label: "Inicio", path: "/", icon: LayoutDashboard },
   { label: "Alumnos", path: "/clientes", icon: UsersRound },
   { label: "Ejercicios", path: "/ejercicios", icon: Dumbbell },
+  { label: "Rutinas", path: "/rutinas", icon: ClipboardList },
   { label: "Accesos", path: "/accesos", icon: Fingerprint },
 ];
 
@@ -23,7 +24,7 @@ export default function ProfessorLayout({ currentPath = "/", children, preview =
     const Icon = item.icon;
     const active = currentPath === item.path;
     const classes = compact
-      ? `flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${active ? "bg-[#E30613] text-white" : "text-slate-500"}`
+      ? `flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-[9px] font-black ${active ? "bg-[#E30613] text-white" : "text-slate-500"}`
       : `inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${active ? "bg-[#E30613] text-white" : "text-slate-600 hover:bg-slate-100"}`;
     if (preview) return <span className={classes}><Icon className="size-4" />{item.label}</span>;
     return <Link to={item.path} className={classes}><Icon className="size-4" />{item.label}</Link>;
