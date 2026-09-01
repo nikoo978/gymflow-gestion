@@ -8,6 +8,8 @@ revoke all on schema private from public, anon, authenticated;
 -- Perfil de cuenta: DNI requerido para nuevas altas y visible al administrar cuentas.
 alter table public.gf_profiles add column if not exists dni text;
 
+-- Sólo se recuperan DNIs históricos que ya cumplen el formato nuevo.
+-- Los datos de prueba/incompletos permanecen NULL y no bloquean la migración.
 update public.gf_profiles p
 set dni = nullif(regexp_replace(coalesce(person.item->>'dni',''), '[^0-9]', '', 'g'), '')
 from public.gf_account_links l
@@ -20,7 +22,7 @@ join lateral (
 ) person on true
 where p.user_id = l.user_id
   and coalesce(trim(p.dni), '') = ''
-  and coalesce(trim(person.item->>'dni'), '') <> '';
+  and regexp_replace(coalesce(person.item->>'dni',''), '[^0-9]', '', 'g') ~ '^[0-9]{6,10}$';
 
 create unique index if not exists gf_profiles_dni_unique_idx
   on public.gf_profiles (dni)
@@ -67,6 +69,7 @@ begin
   return new;
 end;
 $$;
+revoke all on function public.gf_create_profile_for_new_user() from public, anon, authenticated;
 
 -- Amplía el listado administrativo con DNI.
 drop function if exists public.gf_list_accounts();
