@@ -47,6 +47,23 @@ export function buildStateOperations(before, after, deviceId = getDeviceId()) {
   for (const collection of COLLECTIONS) {
     const oldItems = Array.isArray(before?.[collection]) ? before[collection] : [];
     const newItems = Array.isArray(after?.[collection]) ? after[collection] : [];
+
+    // Avoid generating hundreds/thousands of delete operations when the Admin clears a
+    // whole branch access log or the notification history. The server executes this as
+    // one indexed DELETE and keeps the legacy snapshot consistent in the same transaction.
+    if (collection === "accesses" && oldItems.length) {
+      const branch = before?.activeBranch;
+      const withoutBranch = oldItems.filter((item) => item?.branch !== branch);
+      if (branch && same(withoutBranch, newItems) && oldItems.some((item) => item?.branch === branch)) {
+        operations.push({ ...operationBase(deviceId), action: "clear", collection, branch });
+        continue;
+      }
+    }
+    if (collection === "notificationLog" && oldItems.length && newItems.length === 0) {
+      operations.push({ ...operationBase(deviceId), action: "clear", collection });
+      continue;
+    }
+
     const oldById = new Map(oldItems.filter((item) => item?.id).map((item) => [String(item.id), item]));
     const newById = new Map(newItems.filter((item) => item?.id).map((item) => [String(item.id), item]));
 
@@ -115,6 +132,18 @@ export function applyOperationsLocally(state, operations) {
     if (operation.action === "delete" && COLLECTIONS.includes(operation.collection)) {
       const items = Array.isArray(next[operation.collection]) ? next[operation.collection] : [];
       next[operation.collection] = items.filter((item) => String(item?.id) !== String(operation.recordId));
+      continue;
+    }
+
+    if (operation.action === "clear" && operation.collection === "accesses") {
+      const items = Array.isArray(next.accesses) ? next.accesses : [];
+      next.accesses = operation.branch ? items.filter((item) => item?.branch !== operation.branch) : [];
+      continue;
+    }
+
+    if (operation.action === "clear" && operation.collection === "notificationLog") {
+      const items = Array.isArray(next.notificationLog) ? next.notificationLog : [];
+      next.notificationLog = operation.branch ? items.filter((item) => item?.branch !== operation.branch) : [];
       continue;
     }
 
