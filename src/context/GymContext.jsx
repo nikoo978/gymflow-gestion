@@ -36,10 +36,11 @@ export function planUsage(person, accesses, now = new Date()) {
   const weekStart = startOfWeek(now);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
   const today = now.toISOString().slice(0, 10);
-  const days = new Set(accesses
+  const days = new Set((Array.isArray(person?._weekAccessDates) ? person._weekAccessDates : []).map((value) => String(value).slice(0, 10)));
+  (accesses || [])
     .filter((access) => access.personId === person.id && access.allowed && !access.manual)
     .filter((access) => { const date = new Date(access.date); return date >= weekStart && date < weekEnd; })
-    .map((access) => access.date.slice(0, 10)));
+    .forEach((access) => days.add(String(access.date).slice(0, 10)));
   return { usedDays: days.size, alreadyEnteredToday: days.has(today), limitReached: days.size >= 3 && !days.has(today) };
 }
 
@@ -262,22 +263,8 @@ export function GymProvider({ children }) {
     };
   }, [storageReady, isCloud, isLocal, isOnline, user?.id, permissions?.isStaff]);
 
-  const reminderSignature = data.people
-    .filter((person) => person.role === "Cliente")
-    .map((person) => `${person.id}|${person.name}|${person.expiry || ""}|${person.branch || ""}`)
-    .sort()
-    .join(";");
-
-  useEffect(() => {
-    if (!isCloud || !storageReady || !permissions?.canManageNotifications) return undefined;
-    const timer = setTimeout(() => {
-      data.people.filter((person) => person.role === "Cliente" && person.expiry).forEach((person) => {
-        scheduleMembershipNotifications(person).catch(() => undefined);
-      });
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [reminderSignature, isCloud, storageReady, permissions?.canManageNotifications]);
-
+  // Membership scheduling is incremental (alta/edición/renovación below). Re-scheduling
+  // every client on each staff session would create 10k network jobs at the target scale.
   const update = (fn) => {
     const before = dataRef.current;
     const after = fn(structuredClone(before));
@@ -459,7 +446,7 @@ export function GymProvider({ children }) {
         person,
         allowed,
         membershipStatus,
-        lastPaymentDate: lastPayment?.date || person?.start || null,
+        lastPaymentDate: lastPayment?.date || person?._lastPaymentDate || person?.start || null,
         daysToExpiry,
         planUsage: usage,
         denialReason,
