@@ -1,4 +1,14 @@
-# V.1.05
+# V.1.051
+
+Sincronización global de segunda pantalla de accesos.
+
+- La segunda pantalla se sincroniza entre PC, celular, tablet o TV mediante Supabase Realtime.
+- Todos los dispositivos muestran el mismo resultado cuando ingresa un Cliente o Profesor.
+- El último evento puede recuperarse durante 30 segundos al abrir o reconectar una segunda pantalla.
+- Se mantiene BroadcastChannel/localStorage como respaldo local en la PC.
+- Accesos permite copiar un enlace seguro para abrir la misma segunda pantalla en otro dispositivo.
+
+## V.1.05
 
 Rutinas + glosario de ejercicios + registro reforzado.
 
