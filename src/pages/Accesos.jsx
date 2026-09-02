@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Delete, DoorOpen, Fingerprint, MonitorUp, Search, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Copy, Delete, DoorOpen, Fingerprint, MonitorUp, Search, Trash2, XCircle } from "lucide-react";
 import { statusOf, useGym } from "../context/GymContext";
 import { useAuth } from "../context/AuthContext";
+import { buildAccessDisplayUrl, getAccessDisplayKey, publishGlobalAccessDisplay } from "../services/accessDisplay";
 
 const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
 const INPUT_KEY = "gymflow-keypad-input";
@@ -11,12 +12,20 @@ export default function Accesos() {
   const { permissions } = useAuth();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
+  const [displayMessage, setDisplayMessage] = useState("");
   const inputRef = useRef(null);
   const recent = data.accesses.filter((access) => access.branch === data.activeBranch).slice(0, 12);
 
+  const publishResult = (accessResult) => {
+    if (!accessResult || accessResult.ok === false) return;
+    publishGlobalAccessDisplay(accessResult).catch(() => undefined);
+  };
+
   const validate = () => {
     if (!query.trim()) return;
-    setResult(checkAccess(query.trim()));
+    const accessResult = checkAccess(query.trim());
+    setResult(accessResult);
+    publishResult(accessResult);
     setQuery("");
     inputRef.current?.focus();
   };
@@ -33,15 +42,45 @@ export default function Accesos() {
     inputRef.current?.focus();
   };
 
-  const openDisplay = () => {
-    window.open("/pantalla-acceso", "gymflow-access-display", "popup,width=1280,height=720");
+  const getDisplayUrl = async () => {
+    const { displayKey, error } = await getAccessDisplayKey();
+    if (error || !displayKey) throw error || new Error("No se pudo obtener el enlace de segunda pantalla.");
+    return buildAccessDisplayUrl(displayKey);
+  };
+
+  const openDisplay = async () => {
+    setDisplayMessage("");
+    const popup = window.open("about:blank", "gymflow-access-display", "popup,width=1280,height=720");
+    try {
+      const url = await getDisplayUrl();
+      if (popup) popup.location.href = url;
+      else window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      popup?.close();
+      setDisplayMessage(error?.message || "No se pudo abrir la segunda pantalla.");
+    }
+  };
+
+  const copyDisplayLink = async () => {
+    setDisplayMessage("");
+    try {
+      const url = await getDisplayUrl();
+      await navigator.clipboard.writeText(url);
+      setDisplayMessage("Enlace copiado. Abrilo en el celular, tablet o TV que quieras usar como segunda pantalla.");
+    } catch (error) {
+      setDisplayMessage(error?.message || "No se pudo copiar el enlace.");
+    }
   };
 
   const clearRecent = () => {
     if (window.confirm("¿Borrar todos los intentos de acceso de esta sucursal?")) clearAccesses();
   };
 
-  const allowManualAccess = () => setResult(allowGuest());
+  const allowManualAccess = () => {
+    const accessResult = allowGuest();
+    setResult(accessResult);
+    publishResult(accessResult);
+  };
 
   useEffect(() => {
     const handleUsbKeypad = (event) => {
@@ -78,8 +117,10 @@ export default function Accesos() {
           <h1 className="page-title">Control de acceso</h1>
           <p className="page-subtitle">Validación por DNI o futura lectura biométrica.</p>
         </div>
-        <div className="flex flex-wrap gap-2"><button onClick={allowManualAccess} className="btn-primary"><DoorOpen className="size-4" /> Permitir acceso</button><button onClick={openDisplay} className="btn-secondary"><MonitorUp className="size-4" /> Abrir pantalla secundaria</button></div>
+        <div className="flex flex-wrap gap-2"><button onClick={allowManualAccess} className="btn-primary"><DoorOpen className="size-4" /> Permitir acceso</button><button onClick={openDisplay} className="btn-secondary"><MonitorUp className="size-4" /> Abrir pantalla secundaria</button><button onClick={copyDisplayLink} className="btn-secondary"><Copy className="size-4" /> Copiar enlace</button></div>
       </section>
+
+      {displayMessage && <p className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600">{displayMessage}</p>}
 
       <section className="grid gap-5 xl:grid-cols-[.8fr_.7fr_1.2fr]">
         <article className="rounded-[20px] bg-[#050505] p-6 text-white shadow-xl shadow-black/10">
