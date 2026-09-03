@@ -17,11 +17,8 @@ export function normalizeExerciseSearch(value = "") {
     .replace(/\s+/g, " ");
 }
 
-export function matchesExerciseSearch(exercise, query = "") {
-  const normalizedQuery = normalizeExerciseSearch(query);
-  if (!normalizedQuery) return true;
-
-  const haystack = normalizeExerciseSearch([
+function buildExerciseSearchIndex(exercise) {
+  return normalizeExerciseSearch([
     exercise?.name,
     exercise?.muscle_group,
     exercise?.category,
@@ -30,15 +27,21 @@ export function matchesExerciseSearch(exercise, query = "") {
     ...(exercise?.aliases || []),
     ...(exercise?.library_codes || []),
   ].filter(Boolean).join(" "));
+}
 
+export function matchesExerciseSearch(exercise, query = "") {
+  const normalizedQuery = normalizeExerciseSearch(query);
+  if (!normalizedQuery) return true;
+  const haystack = exercise?.search_index || buildExerciseSearchIndex(exercise);
   return normalizedQuery.split(" ").every((token) => haystack.includes(token));
 }
 
 function withAliases(exercise) {
-  return {
+  const enriched = {
     ...exercise,
     aliases: aliasesForLibraryCodes(exercise?.library_codes || []),
   };
+  return { ...enriched, search_index: buildExerciseSearchIndex(enriched) };
 }
 
 export async function listExercises() {
