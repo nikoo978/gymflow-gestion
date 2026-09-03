@@ -17,8 +17,8 @@ export async function setProfessorAccessPermission(userId, enabled) {
   return { result: data || null, error };
 }
 
-export async function allowProfessorManualAccess() {
+export async function allowProfessorManualAccess(branch) {
   if (!supabase) return { event: null, error: noSupabase() };
-  const { data, error } = await supabase.rpc("gf_professor_allow_manual_access");
+  const { data, error } = await supabase.rpc("gf_professor_allow_manual_access", { p_branch: branch });
   return { event: data || null, error };
 }
