@@ -1,15 +1,16 @@
 import { ChevronDown, ChevronUp, Dumbbell, ExternalLink, Search, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { listExercises, matchesExerciseSearch, MUSCLE_GROUPS } from "../../services/exercises";
-import ExerciseGif from "./ExerciseGif";
+import { ExerciseGifGallery } from "./ExerciseGif";
 
 const PAGE_SIZE = 48;
 
 function SecondaryNames({ exercise }) {
   const aliases = exercise?.aliases || [];
-  const originalName = String(exercise?.original_name || "").trim();
-  const libraryCode = exercise?.library_code;
-  if (!aliases.length && !originalName && !libraryCode) return null;
+  const originalNames = exercise?.original_names?.length
+    ? exercise.original_names
+    : [String(exercise?.original_name || "").trim()].filter(Boolean);
+  if (!aliases.length && !originalNames.length) return null;
 
   return (
     <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
@@ -19,13 +20,12 @@ function SecondaryNames({ exercise }) {
           <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{aliases.join(", ")}</p>
         </div>
       )}
-      {originalName && (
+      {originalNames.length > 0 && (
         <div>
           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nombre original</p>
-          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{originalName}</p>
+          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{originalNames.join(", ")}</p>
         </div>
       )}
-      {libraryCode && <p className="text-[10px] font-black text-slate-400">ID {libraryCode}</p>}
     </div>
   );
 }
@@ -62,7 +62,7 @@ export default function ExerciseCatalog({ compact = false, preview = false }) {
       <div>
         <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#E30613]">Consulta</p>
         <h1 className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-black text-[#050505]`}>Ejercicios</h1>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Buscá por nombre argentino, alias, nombre original, músculo o equipamiento y revisá la técnica y el GIF demostrativo.</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Buscá por nombre argentino, alias, nombre original, músculo o equipamiento y revisá la técnica y todos los GIFs disponibles del movimiento.</p>
       </div>
 
       <div className="rounded-[20px] bg-white p-3 shadow-sm">
@@ -108,7 +108,7 @@ export default function ExerciseCatalog({ compact = false, preview = false }) {
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Referencia</p>
                     <p className="mt-1 text-xs font-bold text-slate-600">{exercise.default_sets || 3} series · {exercise.default_reps || "8-12"} reps · {exercise.rest_seconds ?? 60}s descanso</p>
                   </div>
-                  <div className="mt-3 overflow-hidden rounded-2xl bg-slate-100"><ExerciseGif exercise={exercise} className="max-h-56 w-full object-contain" /></div>
+                  <div className="mt-3"><ExerciseGifGallery exercise={exercise} className="max-h-56 w-full object-contain" /></div>
                   {exercise.video_url && <a href={exercise.video_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-[#050505] px-3 text-xs font-black text-white"><Video className="size-3.5" /> Ver video <ExternalLink className="size-3" /></a>}
                 </div>
               )}
