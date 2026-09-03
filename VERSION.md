@@ -1,4 +1,15 @@
-# V.1.062
+# V.1.063
+
+Búsqueda por alias y nombres de ejercicios completamente legibles.
+
+- Integra los alias entregados para 752 IDs de la biblioteca, separados originalmente por `;`, y los agrupa automáticamente cuando un ejercicio tiene varios códigos.
+- El buscador de Profesor, Cliente, Admin y constructor de rutinas reconoce nombre, alias, músculo, categoría, equipamiento, descripción y código.
+- La búsqueda normaliza mayúsculas, acentos, signos y espacios, por lo que variantes como `biceps` también encuentran `Bíceps`.
+- Los nombres dejan de cortarse con una sola línea en la PWA: las tarjetas crecen lo necesario para mostrar el nombre completo.
+- Al abrir un ejercicio se vuelve a mostrar el nombre completo junto con sus alias principales, descripción y GIF.
+- El constructor de rutinas también muestra nombres completos y permite localizar ejercicios usando cualquiera de sus alias.
+
+## V.1.062
 
 GIFs demostrativos de ejercicios vinculados por ID desde Cloudinary.
 
