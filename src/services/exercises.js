@@ -1,3 +1,4 @@
+import { aliasesForLibraryCodes } from "../data/exerciseAliases";
 import { supabase } from "./supabase";
 
 export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Hombros", "Bíceps", "Tríceps", "Antebrazos", "Core", "Glúteos", "Cuádriceps", "Isquiotibiales", "Gemelos", "Cadera", "Cuello", "Cuerpo completo", "Cardio", "Movilidad"];
@@ -5,6 +6,40 @@ export const EXERCISE_CATEGORIES = ["Fuerza", "Hipertrofia", "Técnica", "Cardio
 
 const EXERCISE_PAGE_SIZE = 500;
 const EXERCISE_SELECT = "id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at,library_codes";
+
+export function normalizeExerciseSearch(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+export function matchesExerciseSearch(exercise, query = "") {
+  const normalizedQuery = normalizeExerciseSearch(query);
+  if (!normalizedQuery) return true;
+
+  const haystack = normalizeExerciseSearch([
+    exercise?.name,
+    exercise?.muscle_group,
+    exercise?.category,
+    exercise?.equipment,
+    exercise?.notes,
+    ...(exercise?.aliases || []),
+    ...(exercise?.library_codes || []),
+  ].filter(Boolean).join(" "));
+
+  return normalizedQuery.split(" ").every((token) => haystack.includes(token));
+}
+
+function withAliases(exercise) {
+  return {
+    ...exercise,
+    aliases: aliasesForLibraryCodes(exercise?.library_codes || []),
+  };
+}
 
 export async function listExercises() {
   if (!supabase) return { exercises: [], error: new Error("Supabase no configurado") };
@@ -22,7 +57,7 @@ export async function listExercises() {
 
     if (error) return { exercises: [], error };
 
-    const batch = data || [];
+    const batch = (data || []).map(withAliases);
     exercises.push(...batch);
     if (batch.length < EXERCISE_PAGE_SIZE) break;
     from += EXERCISE_PAGE_SIZE;
@@ -40,7 +75,7 @@ export async function createExercise(payload) {
     .insert({ ...payload, created_by: authData.user.id, is_system: false })
     .select()
     .single();
-  return { exercise: data || null, error };
+  return { exercise: data ? withAliases(data) : null, error };
 }
 
 export async function updateExercise(id, payload) {
@@ -51,7 +86,7 @@ export async function updateExercise(id, payload) {
     .eq("id", id)
     .select()
     .single();
-  return { exercise: data || null, error };
+  return { exercise: data ? withAliases(data) : null, error };
 }
 
 export async function deleteExercise(id) {
