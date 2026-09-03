@@ -1,4 +1,16 @@
-# V.1.063
+# V.1.064
+
+Variantes de ejercicios separadas por ID.
+
+- Corrige la consolidación anterior: cada ID de la biblioteca vuelve a representar una variante independiente, aunque comparta nombre con otra.
+- La biblioteca oficial queda en exactamente 1.336 ejercicios, con 1.336 IDs distintos.
+- Cada variante usa exclusivamente su propio GIF de Cloudinary mediante `https://res.cloudinary.com/po0pnxfc/image/upload/ID.gif`.
+- Se elimina la unicidad por nombre + músculo y se protege la unicidad del ID de biblioteca para impedir futuras consolidaciones accidentales.
+- Las 47 familias que tienen nombres repetidos se identifican visualmente como `Variante · ID N` en glosario y constructor de rutinas.
+- Los alias siguen asociados por ID, por lo que cada variante conserva las búsquedas que le correspondan.
+- Los 11 ejercicios de ejemplo iniciales, no usados por ninguna rutina, se retiran para que el catálogo oficial coincida exactamente con las 1.336 referencias proporcionadas.
+
+## V.1.063
 
 Búsqueda por alias y nombres de ejercicios completamente legibles.
 
