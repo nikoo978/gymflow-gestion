@@ -10,10 +10,19 @@ const TEXT_EXTENSIONS = new Set([
 ]);
 const SPECIAL_FILES = new Set(["Dockerfile", ".dockerignore", ".gitignore", ".npmrc"]);
 const TERMS = ["VERCEL", "QSTASH", "UPSTASH", "VAPID", "SUPABASE", "PUBLIC_APP_URL"];
+const LOCAL_HOSTS = new Set(["0.0.0.0", "127.0.0.1", "localhost"]);
 
 const processEnv = new Set();
 const importMetaEnv = new Set();
 const termFiles = new Map(TERMS.map((term) => [term, new Set()]));
+const externalHosts = new Map();
+
+function rememberHost(hostname, file) {
+  const host = String(hostname || "").toLowerCase();
+  if (!host || LOCAL_HOSTS.has(host) || host.endsWith(".example.com")) return;
+  if (!externalHosts.has(host)) externalHosts.set(host, new Set());
+  externalHosts.get(host).add(file);
+}
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -36,6 +45,10 @@ async function walk(directory) {
     for (const match of source.matchAll(/import\.meta\.env(?:\.([A-Z0-9_]+)|\[['"]([A-Z0-9_]+)['"]\])/g)) {
       importMetaEnv.add(match[1] || match[2]);
     }
+    for (const match of source.matchAll(/https?:\/\/[^\s'"`<>)\]}]+/g)) {
+      try { rememberHost(new URL(match[0]).hostname, file); } catch { /* dynamic or documentation placeholder */ }
+    }
+
     const upper = source.toUpperCase();
     for (const term of TERMS) if (upper.includes(term)) termFiles.get(term).add(file);
   }
@@ -50,4 +63,8 @@ for (const term of TERMS) {
   const files = [...termFiles.get(term)].sort();
   console.log(`${term} files (${files.length}):`);
   for (const file of files) console.log(`  - ${file}`);
+}
+console.log(`external URL hosts (${externalHosts.size}):`);
+for (const [host, files] of [...externalHosts.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+  console.log(`  - ${host}: ${[...files].sort().join(", ")}`);
 }

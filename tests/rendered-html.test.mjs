@@ -42,3 +42,24 @@ test("serves the portable health endpoint", async () => {
     assert.deepEqual(await response.json(), { ok: true, service: "gymflow" });
   });
 });
+
+test("adapts API query parameters for Push diagnostics", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/push?action=diagnostics`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.action, "diagnostics");
+    assert.equal(body.runtime, "node");
+    assert.equal(body.configured.publicAppUrl, false);
+  });
+});
+
+test("returns a JSON 404 for unknown API routes", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/not-a-route`);
+    assert.equal(response.status, 404);
+    assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
+    assert.deepEqual(await response.json(), { error: "API no encontrada" });
+  });
+});
