@@ -1,4 +1,14 @@
-# V.1.061
+# V.1.062
+
+GIFs demostrativos de ejercicios vinculados por ID desde Cloudinary.
+
+- Cada ejercicio importado usa su código original para cargar `https://res.cloudinary.com/po0pnxfc/image/upload/ID.gif`.
+- Los ejercicios consolidados que tienen varios códigos conservan fallback automático entre sus IDs si un GIF no está disponible.
+- Los GIFs se muestran tanto en el glosario móvil de Profesor/Cliente como en la biblioteca de Admin.
+- Las imágenes usan carga diferida y `object-contain` para mostrar el movimiento completo sin recortes innecesarios.
+- Los ejercicios personalizados pueden seguir usando una URL de imagen/GIF manual.
+
+## V.1.061
 
 Biblioteca masiva de ejercicios clasificada y optimizada para móvil.
 
