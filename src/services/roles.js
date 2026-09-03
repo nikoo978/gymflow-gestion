@@ -15,7 +15,7 @@ export async function getMyProfile() {
   if (authError || !authData?.user?.id) return { profile: null, error: authError || new Error("Sin sesión") };
   const { data, error } = await supabase
     .from("gf_profiles")
-    .select("user_id,email,display_name,dni,role,is_master,created_at,updated_at")
+    .select("user_id,email,display_name,dni,role,is_master,can_grant_access,created_at,updated_at")
     .eq("user_id", authData.user.id)
     .maybeSingle();
   return { profile: data || null, error };
@@ -70,7 +70,8 @@ export async function getMyClientPortal() {
   return { portal: data || null, error };
 }
 
-export function permissionsForRole(role) {
+export function permissionsForRole(role, profile = null) {
+  const professorAccess = role === "profe" && Boolean(profile?.can_grant_access);
   return {
     role,
     isMaster: role === "admin",
@@ -79,7 +80,8 @@ export function permissionsForRole(role) {
     canUseLocalMode: role === "admin",
     canOperate: ["admin", "coadmin"].includes(role),
     canDelete: role === "admin",
-    canAccessControl: ["admin", "coadmin", "profe"].includes(role),
+    canAccessControl: ["admin", "coadmin"].includes(role),
+    canGrantManualAccess: professorAccess,
     canViewFinance: ["admin", "coadmin"].includes(role),
     canManageNotifications: ["admin", "coadmin"].includes(role),
   };
