@@ -28,7 +28,7 @@ export default function ProfessorDashboard({ previewProfile = null }) {
     if (!canGrantAccess || accessBusy) return;
     if (!window.confirm("¿Permitir un acceso manual ahora? Se reflejará en todas las segundas pantallas.")) return;
     setAccessBusy(true); setAccessError(""); setAccessMessage("");
-    const result = await allowProfessorManualAccess();
+    const result = await allowProfessorManualAccess(branch);
     if (result.error) setAccessError(result.error.message || "No se pudo permitir el acceso.");
     else setAccessMessage("Acceso permitido y enviado a la segunda pantalla.");
     setAccessBusy(false);
