@@ -22,7 +22,7 @@ import Routines from "./pages/Routines";
 import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 
-export const APP_VERSION = "V.1.06";
+export const APP_VERSION = "V.1.061";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },
