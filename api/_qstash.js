@@ -2,11 +2,8 @@ const RELAY_MS = 6 * 24 * 60 * 60 * 1000;
 
 function appUrl() {
   const configured = String(process.env.PUBLIC_APP_URL || "").trim();
-  const production = String(process.env.VERCEL_PROJECT_PRODUCTION_URL || "").trim();
-  const preview = String(process.env.VERCEL_URL || "").trim();
-  const url = configured || (production ? `https://${production}` : preview ? `https://${preview}` : "");
-  if (!url) throw Object.assign(new Error("PUBLIC_APP_URL no configurada"), { statusCode: 503 });
-  return url.replace(/\/$/, "");
+  if (!configured) throw Object.assign(new Error("PUBLIC_APP_URL no configurada"), { statusCode: 503 });
+  return configured.replace(/\/$/, "");
 }
 
 export async function publishAt(payload, finalAtMs) {
