@@ -1,38 +1,43 @@
-# GymFlow / Infytter Fitness · V.1.05
+# GymFlow / Infytter Fitness · V.1.067
 
-Versión enfocada en **rutinas**, glosario de ejercicios y gestión completa de cuentas PWA.
+PWA de gestión para Infytter Fitness con interfaces separadas para Admin/Coadmin, Profesor y Cliente, sincronización Cloud mediante Supabase y despliegue en Vercel.
 
 ## Interfaces
 
-- **Admin/Coadmin:** panel administrativo. El Admin Master puede eliminar definitivamente cuentas/mail PWA; la ficha del gimnasio se conserva.
-- **Profe:** interfaz propia con Inicio, Alumnos, Ejercicios, Rutinas y Accesos; sin caja, finanzas ni gestión global de usuarios.
-- **Cliente:** portal PWA mobile-first con Inicio, Mis rutinas y Rutinas del profe.
-- **Admin/Coadmin:** mantienen Vista previa de Profesor y Cliente sin alterar permisos reales.
+- **Admin/Coadmin:** administración de clientes, personal, usuarios, ejercicios, caja, reportes, accesos y notificaciones según permisos.
+- **Admin Master:** máxima autoridad; además gestiona permisos individuales de Profesor y eliminación definitiva de cuentas PWA.
+- **Profesor:** interfaz móvil con Inicio, Alumnos, Progreso, Ejercicios y Rutinas. El botón **Permitir acceso** sólo aparece cuando el Admin Master lo habilita.
+- **Cliente:** portal mobile-first con membresía, progreso corporal, biblioteca completa de ejercicios y rutinas.
+- **Vista previa Admin:** permite entrar visualmente al interfaz completo de Profesor o Cliente y volver a Administración mediante una X, sin cambiar el rol real.
 
-## Registro
+## Biblioteca de ejercicios
 
-Las nuevas cuentas solicitan nombre completo, DNI, email y contraseña. Empiezan como Cliente y luego pueden vincularse desde Usuarios a una ficha existente.
-
-## Glosario de ejercicios
-
-- Filtro por músculo y búsqueda por nombre.
-- Cada ejercicio se despliega para mostrar una explicación breve.
-- Soporta URL de imagen/GIF y video; el contenido multimedia definitivo se completará más adelante.
-- Los valores de series, repeticiones y descanso sirven como sugerencia al agregar el ejercicio a una rutina.
+- **1.281 ejercicios únicos visibles** construidos a partir de **1.336 IDs/GIFs** de la biblioteca original.
+- Los 47 ejercicios que poseen variantes visuales aparecen una sola vez.
+- Al desplegar uno de esos ejercicios se muestran juntos sus 2, 3 o 4 GIFs, sin submenús, descripciones duplicadas ni etiquetas de variante.
+- Nombre visible: nombre más común en Argentina.
+- Buscador por nombre argentino, alias, nombre original, músculo, equipamiento, descripción e IDs asociados.
+- GIFs alojados en Cloudinary mediante `https://res.cloudinary.com/po0pnxfc/image/upload/ID.gif`.
 
 ## Rutinas
 
-- Profesor crea y edita rutinas compartidas y puede enviarlas a uno o varios clientes con cuenta vinculada.
-- Editar una rutina enviada actualiza la versión que ven todos sus clientes.
-- Profesor no puede retirar una rutina ya enviada; permanece hasta que el Cliente la elimine de su cuenta.
-- Cliente puede crear hasta 3 rutinas personales y gestionarlas desde el celular.
-- Rutinas y asignaciones viven en el esquema privado de Supabase y sólo se acceden mediante RPCs con control de rol/propiedad.
+- Profesor crea y edita rutinas compartidas y puede enviarlas a clientes vinculados.
+- Cliente puede gestionar hasta 3 rutinas personales y quitar de su cuenta una rutina enviada por Profesor.
+- El constructor muestra cada ejercicio una sola vez y mantiene compatibilidad con rutinas antiguas que hayan guardado el ID de una variante.
 
-## Migraciones V.1.05
+## Progreso corporal
 
-```text
-supabase/migrations/20260901_gf_routines_registration_v105.sql
-supabase/migrations/20260901_gf_routines_v105_indexes.sql
-```
+Cliente y Profesor disponen de seguimiento de peso, altura y medidas, con IMC y porcentaje de grasa estimado cuando existen los datos necesarios. Los cálculos se presentan como referencia orientativa.
 
-Ambas están aplicadas en producción. No requiere variables nuevas en Vercel.
+## Accesos y segunda pantalla
+
+La segunda pantalla de accesos se sincroniza entre dispositivos mediante Supabase Realtime. PC, celular, tablet o TV muestran el mismo evento de acceso mientras estén vinculados a la misma pantalla.
+
+## Plataforma
+
+- React 19 + Vite
+- Supabase Auth / PostgreSQL / Realtime
+- Vercel
+- PWA y operación local de emergencia para Admin Master
+
+El historial detallado de cambios está en `VERSION.md`.
