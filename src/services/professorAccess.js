@@ -1,0 +1,24 @@
+import { supabase } from "./supabase";
+
+const noSupabase = () => new Error("Supabase no configurado");
+
+export async function listProfessorAccessPermissions() {
+  if (!supabase) return { professors: [], error: noSupabase() };
+  const { data, error } = await supabase.rpc("gf_list_professor_permissions");
+  return { professors: data || [], error };
+}
+
+export async function setProfessorAccessPermission(userId, enabled) {
+  if (!supabase) return { result: null, error: noSupabase() };
+  const { data, error } = await supabase.rpc("gf_set_professor_access_permission", {
+    p_user_id: userId,
+    p_enabled: Boolean(enabled),
+  });
+  return { result: data || null, error };
+}
+
+export async function allowProfessorManualAccess() {
+  if (!supabase) return { event: null, error: noSupabase() };
+  const { data, error } = await supabase.rpc("gf_professor_allow_manual_access");
+  return { event: data || null, error };
+}
