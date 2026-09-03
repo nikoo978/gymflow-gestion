@@ -1,4 +1,20 @@
-# V.1.051
+# V.1.06
+
+Interfaces móviles completas para Profesor y Cliente + seguimiento corporal + permisos de acceso por profesor.
+
+- Profesor elimina “Accesos” de su navegación y usa Inicio / Alumnos / Progreso / Ejercicios / Rutinas.
+- El botón “Permitir acceso” aparece en Inicio sólo a profesores habilitados individualmente por el Admin Master.
+- El permiso se valida también en Supabase; ocultar el botón no es la única protección.
+- El acceso manual se registra en la sucursal seleccionada por el profesor y se refleja en todas las segundas pantallas.
+- Profesor puede registrar y consultar su progreso corporal y el de sus alumnos.
+- Cliente incorpora Inicio / Progreso / Ejercicios / Mis rutinas / Profe.
+- Cliente puede registrar peso, altura, cintura, cuello, cadera opcional y notas.
+- El sistema calcula IMC y, cuando hay medidas suficientes, porcentaje de grasa corporal estimado mediante fórmula Navy. Se presenta como estimación orientativa, no diagnóstico médico.
+- Las mediciones se almacenan en una tabla privada, indexada y sin acceso directo desde el navegador.
+- Profesor y Cliente tienen acceso al glosario completo de ejercicios para consultar técnica, músculo, equipamiento, referencias y material visual.
+- Los portales usan navegación inferior, áreas seguras y objetivos táctiles adecuados para iOS y Android.
+
+## V.1.051
 
 Sincronización global de segunda pantalla de accesos.
 
