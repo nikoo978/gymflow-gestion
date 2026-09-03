@@ -1,11 +1,11 @@
-import { aliasesForLibraryCodes } from "../data/exerciseAliases";
+import { metadataForLibraryCode } from "../data/exerciseMetadata";
 import { supabase } from "./supabase";
 
 export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Hombros", "Bíceps", "Tríceps", "Antebrazos", "Core", "Glúteos", "Cuádriceps", "Isquiotibiales", "Gemelos", "Cadera", "Cuello", "Cuerpo completo", "Cardio", "Movilidad"];
 export const EXERCISE_CATEGORIES = ["Fuerza", "Hipertrofia", "Técnica", "Cardio", "Movilidad"];
 
 const EXERCISE_PAGE_SIZE = 500;
-const EXERCISE_SELECT = "id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at,library_codes";
+const EXERCISE_SELECT = "id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at,library_codes,aliases,original_name";
 
 export function normalizeExerciseSearch(value = "") {
   return String(value)
@@ -20,6 +20,7 @@ export function normalizeExerciseSearch(value = "") {
 function buildExerciseSearchIndex(exercise) {
   return normalizeExerciseSearch([
     exercise?.name,
+    exercise?.original_name,
     exercise?.muscle_group,
     exercise?.category,
     exercise?.equipment,
@@ -36,10 +37,15 @@ export function matchesExerciseSearch(exercise, query = "") {
   return normalizedQuery.split(" ").every((token) => haystack.includes(token));
 }
 
-function withAliases(exercise) {
+function prepareExercise(exercise) {
+  const libraryCode = Number(exercise?.library_codes?.[0] || 0) || null;
+  const metadata = libraryCode ? metadataForLibraryCode(libraryCode) : null;
   const enriched = {
     ...exercise,
-    aliases: aliasesForLibraryCodes(exercise?.library_codes || []),
+    name: metadata?.name || exercise?.name || "",
+    aliases: metadata ? metadata.aliases : (Array.isArray(exercise?.aliases) ? exercise.aliases : []),
+    original_name: metadata?.originalName || exercise?.original_name || "",
+    library_code: libraryCode,
   };
   return { ...enriched, search_index: buildExerciseSearchIndex(enriched) };
 }
@@ -53,12 +59,10 @@ function markVariants(exercises) {
   });
 
   return exercises.map((exercise) => {
-    const libraryCode = Number(exercise?.library_codes?.[0] || 0) || null;
     const key = `${normalizeExerciseSearch(exercise.name)}|${normalizeExerciseSearch(exercise.muscle_group)}`;
     return {
       ...exercise,
-      library_code: libraryCode,
-      has_variants: Boolean(exercise?.is_system && libraryCode && (counts.get(key) || 0) > 1),
+      has_variants: Boolean(exercise?.is_system && exercise?.library_code && (counts.get(key) || 0) > 1),
     };
   });
 }
@@ -79,7 +83,7 @@ export async function listExercises() {
 
     if (error) return { exercises: [], error };
 
-    const batch = (data || []).map(withAliases);
+    const batch = (data || []).map(prepareExercise);
     exercises.push(...batch);
     if (batch.length < EXERCISE_PAGE_SIZE) break;
     from += EXERCISE_PAGE_SIZE;
@@ -97,7 +101,7 @@ export async function createExercise(payload) {
     .insert({ ...payload, created_by: authData.user.id, is_system: false })
     .select()
     .single();
-  return { exercise: data ? withAliases(data) : null, error };
+  return { exercise: data ? prepareExercise(data) : null, error };
 }
 
 export async function updateExercise(id, payload) {
@@ -108,7 +112,7 @@ export async function updateExercise(id, payload) {
     .eq("id", id)
     .select()
     .single();
-  return { exercise: data ? withAliases(data) : null, error };
+  return { exercise: data ? prepareExercise(data) : null, error };
 }
 
 export async function deleteExercise(id) {
