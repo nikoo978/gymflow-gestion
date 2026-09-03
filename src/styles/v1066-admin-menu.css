@@ -1,0 +1,66 @@
+@media (min-width: 768px) {
+  aside.w-64 {
+    overflow: hidden;
+  }
+
+  aside.w-64 > nav {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+
+  aside.w-64 > nav::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  aside.w-64 > nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  aside.w-64 > div:last-child {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  aside.w-64 > a:first-child {
+    padding-top: 0.8rem;
+    padding-bottom: 0.15rem;
+  }
+
+  aside.w-64 > a:first-child img {
+    height: 2.25rem;
+  }
+
+  aside.w-64 > p:nth-child(2) {
+    padding-bottom: 0.45rem;
+  }
+
+  aside.w-64 > p:nth-child(3) {
+    padding-bottom: 0.25rem;
+  }
+
+  aside.w-64 > nav {
+    gap: 0.2rem;
+  }
+
+  aside.w-64 > nav a {
+    height: 2.35rem;
+    font-size: 0.8rem;
+  }
+
+  aside.w-64 > div:last-child {
+    margin-top: 0.35rem;
+    padding: 0.65rem;
+  }
+
+  aside.w-64 > div:last-child button {
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+}

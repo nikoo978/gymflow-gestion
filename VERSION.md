@@ -1,4 +1,17 @@
-# V.1.065
+# V.1.066
+
+Vista previa inmersiva por rol + menú Admin adaptable a pantallas de poca altura.
+
+- Al entrar en `Vista previa`, el Admin/Coadmin primero elige `Profesor` o `Cliente`.
+- Al elegir un rol, el panel administrativo desaparece temporalmente y la pantalla pasa a mostrar el interfaz de ese rol a pantalla completa.
+- Una X fija arriba a la derecha cierra la vista previa y devuelve exactamente al área de administración.
+- La vista previa mantiene el rol y permisos reales del Admin; las áreas de Profesor que podrían escribir datos se muestran en modo visual/solo lectura.
+- La vista Profesor permite recorrer Inicio, Alumnos, Progreso, Ejercicios y Rutinas desde su misma navegación responsive.
+- La vista Cliente mantiene su navegación móvil interna y puede consultar la biblioteca real de ejercicios sin cambiar de rol.
+- El menú lateral Admin ahora reserva siempre el bloque de usuario/Cerrar sesión y hace scroll sólo sobre las opciones cuando la pantalla tiene poca altura.
+- En netbooks de baja altura se compactan logo, separación y alto de las opciones para que `Vista previa` y `Cerrar sesión` sigan siendo accesibles.
+
+## V.1.065
 
 Nombres de ejercicios adaptados a Argentina con alias y nombre original como referencias secundarias.
 

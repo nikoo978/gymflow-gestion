@@ -21,8 +21,9 @@ import Reportes from "./pages/Reportes";
 import Routines from "./pages/Routines";
 import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
+import "./styles/v1066-admin-menu.css";
 
-export const APP_VERSION = "V.1.065";
+export const APP_VERSION = "V.1.066";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },

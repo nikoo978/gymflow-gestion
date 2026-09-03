@@ -35,15 +35,11 @@ export default function ExerciseCatalog({ compact = false, preview = false }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("Todos");
   const [openId, setOpenId] = useState("");
-  const [loading, setLoading] = useState(!preview);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const load = async () => {
-    if (preview) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError("");
     const result = await listExercises();
