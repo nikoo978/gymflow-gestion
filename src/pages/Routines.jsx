@@ -78,7 +78,7 @@ export default function Routines() {
   };
 
   return <div className="mx-auto max-w-[1480px] space-y-4 sm:space-y-6">
-    <section className="page-head gap-4"><div><p className="eyebrow">V.1.05</p><h1 className="page-title">Rutinas</h1><p className="page-subtitle">Creá una vez, ajustá fácil y enviala a uno o varios clientes.</p></div><div className="grid w-full grid-cols-[auto_1fr] gap-2 sm:flex sm:w-auto"><button onClick={load} disabled={loading} className="btn-secondary px-3"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /><span className="hidden sm:inline">Actualizar</span></button><button onClick={() => setCreating(true)} className="btn-primary"><Plus className="size-4" /> Nueva rutina</button></div></section>
+    <section className="page-head gap-4"><div><p className="eyebrow">Entrenamiento</p><h1 className="page-title">Rutinas</h1><p className="page-subtitle">Creá una vez, ajustá fácil y enviala a uno o varios clientes.</p></div><div className="grid w-full grid-cols-[auto_1fr] gap-2 sm:flex sm:w-auto"><button onClick={load} disabled={loading} className="btn-secondary px-3"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /><span className="hidden sm:inline">Actualizar</span></button><button onClick={() => setCreating(true)} className="btn-primary"><Plus className="size-4" /> Nueva rutina</button></div></section>
 
     {message && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{message}</p>}
     {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
