@@ -10,6 +10,7 @@
     "preview": "vite preview --config vite.app.config.js --host 0.0.0.0",
     "start": "node server/index.js",
     "test": "node --test tests/*.test.mjs",
+    "audit:portability": "node scripts/audit-portability.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern vercel-dist",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
   },
