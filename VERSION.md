@@ -1,4 +1,16 @@
-# V.1.066
+# V.1.067
+
+Ejercicios únicos con múltiples GIFs de variantes dentro del mismo detalle.
+
+- La biblioteca conserva los 1.336 IDs/GIFs originales, pero deja de mostrarlos como 1.336 ejercicios separados.
+- Los 47 nombres que tienen variantes se consolidan visualmente en un único ejercicio; el catálogo queda en 1.281 ejercicios únicos.
+- Cada ejercicio mantiene un solo desplegable, una sola descripción, un solo bloque de alias/nombre original y una sola referencia de series/repeticiones.
+- Cuando un ejercicio tiene 2, 3 o 4 variantes, todos sus GIFs aparecen juntos dentro de ese mismo desplegable, sin submenús, etiquetas de variante ni descripciones repetidas.
+- El buscador sigue indexando todos los IDs, alias y nombres originales asociados a cualquiera de sus variantes.
+- El constructor de rutinas también muestra cada ejercicio una sola vez y reconoce IDs antiguos de variantes para evitar duplicados en rutinas existentes.
+- Al volver a guardar una rutina antigua, sus referencias de variantes se normalizan al ejercicio canónico sin perder el nombre ni la configuración de la rutina.
+
+## V.1.066
 
 Vista previa inmersiva por rol + menú Admin adaptable a pantallas de poca altura.
 

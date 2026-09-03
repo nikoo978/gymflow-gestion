@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Dumbbell, ExternalLink, Pencil, Plus, RefreshCw, Search, Trash2, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import ExerciseGif from "../components/exercises/ExerciseGif";
+import { ExerciseGifGallery } from "../components/exercises/ExerciseGif";
 import FormDialog from "../components/ui/FormDialog";
 import { useAuth } from "../context/AuthContext";
 import { createExercise, deleteExercise, EXERCISE_CATEGORIES, listExercises, matchesExerciseSearch, MUSCLE_GROUPS, updateExercise } from "../services/exercises";
@@ -48,9 +48,10 @@ function ExerciseForm({ exercise, onSubmit, busy }) {
 
 function SecondaryNames({ exercise }) {
   const aliases = exercise?.aliases || [];
-  const originalName = String(exercise?.original_name || "").trim();
-  const libraryCode = exercise?.library_code;
-  if (!aliases.length && !originalName && !libraryCode) return null;
+  const originalNames = exercise?.original_names?.length
+    ? exercise.original_names
+    : [String(exercise?.original_name || "").trim()].filter(Boolean);
+  if (!aliases.length && !originalNames.length) return null;
 
   return (
     <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
@@ -60,13 +61,12 @@ function SecondaryNames({ exercise }) {
           <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{aliases.join(", ")}</p>
         </div>
       )}
-      {originalName && (
+      {originalNames.length > 0 && (
         <div>
           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nombre original</p>
-          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{originalName}</p>
+          <p className="mt-1 break-words text-xs font-bold leading-5 text-slate-600">{originalNames.join(", ")}</p>
         </div>
       )}
-      {libraryCode && <p className="text-[10px] font-black text-slate-400">ID {libraryCode}</p>}
     </div>
   );
 }
@@ -141,7 +141,7 @@ export default function Exercises() {
         <div>
           <p className="eyebrow">Glosario</p>
           <h1 className="page-title">Ejercicios</h1>
-          <p className="page-subtitle">Biblioteca completa clasificada por músculo. El nombre principal es el más común en Argentina; también podés buscar por alias, nombre original, grupo, equipamiento o descripción.</p>
+          <p className="page-subtitle">Biblioteca completa clasificada por músculo. Cada ejercicio aparece una sola vez; cuando tiene variantes visuales, todos sus GIFs se muestran dentro del mismo detalle.</p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">
           <button onClick={load} disabled={loading} className="btn-secondary flex-1 sm:flex-none"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /><span className="hidden sm:inline">Actualizar</span></button>
@@ -192,7 +192,7 @@ export default function Exercises() {
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Referencia</p>
                     <p className="mt-1 text-xs font-bold text-slate-600">{exercise.category} · {exercise.default_sets || 3} series · {exercise.default_reps || "8-12"} reps · {exercise.rest_seconds ?? 60}s</p>
                   </div>
-                  <div className="mt-4 overflow-hidden rounded-2xl bg-slate-100"><ExerciseGif exercise={exercise} /></div>
+                  <div className="mt-4"><ExerciseGifGallery exercise={exercise} /></div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {exercise.video_url && <a href={exercise.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Video className="size-3.5" /> Ver video <ExternalLink className="size-3" /></a>}
                     {canEdit(exercise) && <button onClick={() => setEditing(exercise)} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Pencil className="size-3.5" /> Editar</button>}

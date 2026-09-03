@@ -1,6 +1,6 @@
 {
   "name": "gymflow-gestion2",
-  "version": "1.06.6",
+  "version": "1.06.7",
   "private": true,
   "scripts": {
     "dev": "bash scripts/sites-env.sh -- vite --host 0.0.0.0",

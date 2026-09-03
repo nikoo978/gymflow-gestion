@@ -12,8 +12,18 @@ export default function RoutineEditor({ routine = null, exercises = [], onSave, 
   const [group, setGroup] = useState("Todos");
   const [query, setQuery] = useState("");
 
-  const selectedIds = useMemo(() => new Set(items.map((item) => String(item.exercise_id || ""))), [items]);
-  const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [String(exercise.id), exercise])), [exercises]);
+  const exerciseById = useMemo(() => {
+    const map = new Map();
+    exercises.forEach((exercise) => {
+      map.set(String(exercise.id), exercise);
+      (exercise.variant_ids || []).forEach((id) => map.set(String(id), exercise));
+    });
+    return map;
+  }, [exercises]);
+  const selectedIds = useMemo(() => new Set(items.map((item) => {
+    const source = exerciseById.get(String(item.exercise_id || ""));
+    return String(source?.id || item.exercise_id || "");
+  })), [items, exerciseById]);
   const options = useMemo(() => exercises.filter((exercise) => {
     if (group !== "Todos" && exercise.muscle_group !== group) return false;
     return matchesExerciseSearch(exercise, query);
@@ -48,7 +58,11 @@ export default function RoutineEditor({ routine = null, exercises = [], onSave, 
     event.preventDefault();
     const normalizedItems = items.map((item) => {
       const sourceExercise = exerciseById.get(String(item.exercise_id || ""));
-      return { ...item, exercise_name: sourceExercise?.name || item.exercise_name };
+      return {
+        ...item,
+        exercise_id: sourceExercise?.id || item.exercise_id,
+        exercise_name: sourceExercise?.name || item.exercise_name,
+      };
     });
     onSave?.({ id: routine?.id || null, title: title.trim(), description: description.trim(), items: normalizedItems });
   };
