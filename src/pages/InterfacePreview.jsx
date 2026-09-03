@@ -2,7 +2,7 @@ import { Eye, Smartphone, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";
 import ProfessorLayout from "../components/layout/ProfessorLayout";
 import { useGym } from "../context/GymContext";
-import ClientHome from "./ClientHome";
+import ClientHomeV106 from "./ClientHomeV106";
 import ProfessorDashboard from "./ProfessorDashboard";
 
 export default function InterfacePreview() {
@@ -29,6 +29,6 @@ export default function InterfacePreview() {
       {view === "cliente" ? <select value={client?.id || ""} onChange={(event) => setClientId(event.target.value)} className="h-11 min-w-64 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black"><option value="">{clients.length ? "Seleccionar cliente" : "Sin clientes registrados"}</option>{clients.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.dni}</option>)}</select> : <select value={professor?.id || ""} onChange={(event) => setProfessorId(event.target.value)} className="h-11 min-w-64 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black"><option value="">{professors.length ? "Seleccionar profesor" : "Sin profesores registrados"}</option>{professors.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
     </div></section>
 
-    {view === "cliente" ? <div className="mx-auto max-w-[470px] overflow-hidden rounded-[34px] border-[8px] border-[#161616] bg-[#161616] shadow-2xl"><ClientHome preview previewPortal={portal} previewIdentity={{ name: client?.name || "Cliente", email: "cliente@preview.local" }} /></div> : <div className="overflow-hidden rounded-[28px] border border-black/10 bg-[#F5F5F5] shadow-xl"><ProfessorLayout preview previewProfile={{ display_name: professor?.name || "Profesor" }} currentPath="/"><ProfessorDashboard previewProfile={{ display_name: professor?.name || "Profesor" }} /></ProfessorLayout></div>}
+    {view === "cliente" ? <div className="mx-auto max-w-[470px] overflow-hidden rounded-[34px] border-[8px] border-[#161616] bg-[#161616] shadow-2xl"><ClientHomeV106 preview previewPortal={portal} previewIdentity={{ name: client?.name || "Cliente", email: "cliente@preview.local" }} /></div> : <div className="overflow-hidden rounded-[28px] border border-black/10 bg-[#F5F5F5] shadow-xl"><ProfessorLayout preview previewProfile={{ display_name: professor?.name || "Profesor" }} currentPath="/"><ProfessorDashboard previewProfile={{ display_name: professor?.name || "Profesor" }} /></ProfessorLayout></div>}
   </div>;
 }
