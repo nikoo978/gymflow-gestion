@@ -1,16 +1,34 @@
 import { supabase } from "./supabase";
 
-export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Piernas", "Glúteos", "Hombros", "Bíceps", "Tríceps", "Core", "Cardio", "Movilidad", "Otro"];
+export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Hombros", "Bíceps", "Tríceps", "Antebrazos", "Core", "Glúteos", "Cuádriceps", "Isquiotibiales", "Gemelos", "Cadera", "Cuello", "Cuerpo completo", "Cardio", "Movilidad"];
 export const EXERCISE_CATEGORIES = ["Fuerza", "Hipertrofia", "Técnica", "Cardio", "Movilidad"];
+
+const EXERCISE_PAGE_SIZE = 500;
+const EXERCISE_SELECT = "id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at,library_codes";
 
 export async function listExercises() {
   if (!supabase) return { exercises: [], error: new Error("Supabase no configurado") };
-  const { data, error } = await supabase
-    .from("gf_exercises")
-    .select("id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at")
-    .order("muscle_group", { ascending: true })
-    .order("name", { ascending: true });
-  return { exercises: data || [], error };
+
+  const exercises = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("gf_exercises")
+      .select(EXERCISE_SELECT)
+      .order("muscle_group", { ascending: true })
+      .order("name", { ascending: true })
+      .range(from, from + EXERCISE_PAGE_SIZE - 1);
+
+    if (error) return { exercises: [], error };
+
+    const batch = data || [];
+    exercises.push(...batch);
+    if (batch.length < EXERCISE_PAGE_SIZE) break;
+    from += EXERCISE_PAGE_SIZE;
+  }
+
+  return { exercises, error: null };
 }
 
 export async function createExercise(payload) {

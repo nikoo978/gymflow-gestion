@@ -5,11 +5,12 @@ import { useAuth } from "../context/AuthContext";
 import { createExercise, deleteExercise, EXERCISE_CATEGORIES, listExercises, MUSCLE_GROUPS, updateExercise } from "../services/exercises";
 
 const input = "mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-[#E30613]/20";
+const PAGE_SIZE = 48;
 
 function normalizePayload(form) {
   return {
     name: String(form.get("name") || "").trim(),
-    muscle_group: String(form.get("muscle_group") || "Otro"),
+    muscle_group: String(form.get("muscle_group") || "Cuerpo completo"),
     category: String(form.get("category") || "Hipertrofia"),
     equipment: String(form.get("equipment") || "").trim(),
     image_url: String(form.get("image_url") || "").trim() || null,
@@ -47,6 +48,7 @@ export default function Exercises() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const isManager = ["admin", "coadmin"].includes(role);
   const canCreate = ["admin", "coadmin", "profe"].includes(role);
 
@@ -59,11 +61,14 @@ export default function Exercises() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); setOpenId(""); }, [query, group]);
 
   const visible = useMemo(() => exercises.filter((exercise) => {
     if (group !== "Todos" && exercise.muscle_group !== group) return false;
-    return `${exercise.name} ${exercise.muscle_group} ${exercise.equipment || ""}`.toLowerCase().includes(query.trim().toLowerCase());
+    const codes = (exercise.library_codes || []).join(" ");
+    return `${exercise.name} ${exercise.muscle_group} ${exercise.category || ""} ${exercise.equipment || ""} ${exercise.notes || ""} ${codes}`.toLowerCase().includes(query.trim().toLowerCase());
   }), [exercises, group, query]);
+  const shown = visible.slice(0, visibleCount);
 
   const submitCreate = async (event) => {
     event.preventDefault(); setBusy(true); setError(""); setMessage("");
@@ -93,21 +98,24 @@ export default function Exercises() {
 
   const canEdit = (exercise) => isManager || (!exercise.is_system && exercise.created_by === user?.id);
 
-  return <div className="mx-auto max-w-[1480px] space-y-6">
-    <section className="page-head"><div><p className="eyebrow">Glosario</p><h1 className="page-title">Ejercicios</h1><p className="page-subtitle">Buscá por nombre o filtrá por músculo. Tocá un ejercicio para ver una explicación breve y su material visual.</p></div><div className="flex gap-2"><button onClick={load} disabled={loading} className="btn-secondary"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Actualizar</button>{canCreate && <button onClick={() => setCreating(true)} className="btn-primary"><Plus className="size-4" /> Nuevo</button>}</div></section>
+  return <div className="mx-auto max-w-[1480px] space-y-4 sm:space-y-6">
+    <section className="page-head gap-4"><div><p className="eyebrow">Glosario</p><h1 className="page-title">Ejercicios</h1><p className="page-subtitle">Biblioteca completa clasificada por músculo. Buscá por nombre, grupo, equipamiento o descripción.</p></div><div className="flex w-full gap-2 sm:w-auto"><button onClick={load} disabled={loading} className="btn-secondary flex-1 sm:flex-none"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /><span className="hidden sm:inline">Actualizar</span></button>{canCreate && <button onClick={() => setCreating(true)} className="btn-primary flex-1 sm:flex-none"><Plus className="size-4" /> Nuevo</button>}</div></section>
 
     {message && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{message}</p>}
     {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
 
-    <section className="panel space-y-4">
-      <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-[#E30613]/15"><Search className="size-4 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="Buscar ejercicio" /></label>
-      <div className="flex flex-wrap gap-2"><button onClick={() => setGroup("Todos")} className={`rounded-full px-3 py-2 text-xs font-black ${group === "Todos" ? "bg-[#050505] text-white" : "bg-slate-100 text-slate-600"}`}>Todos</button>{MUSCLE_GROUPS.map((item) => <button key={item} onClick={() => setGroup(item)} className={`rounded-full px-3 py-2 text-xs font-black ${group === item ? "bg-[#E30613] text-white" : "bg-slate-100 text-slate-600"}`}>{item}</button>)}</div>
+    <section className="panel space-y-3 p-3 sm:p-4">
+      <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-[#E30613]/15"><Search className="size-4 shrink-0 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder="Buscar ejercicio, músculo o equipo" /></label>
+      <div className="flex items-center justify-between gap-3"><p className="text-xs font-black text-slate-400">{loading ? "Cargando…" : `${visible.length} de ${exercises.length} ejercicios`}</p>{query && <button type="button" onClick={() => setQuery("")} className="text-xs font-black text-[#9E0710]">Limpiar</button>}</div>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><button onClick={() => setGroup("Todos")} className={`shrink-0 rounded-full px-3 py-2 text-xs font-black ${group === "Todos" ? "bg-[#050505] text-white" : "bg-slate-100 text-slate-600"}`}>Todos</button>{MUSCLE_GROUPS.map((item) => <button key={item} onClick={() => setGroup(item)} className={`shrink-0 rounded-full px-3 py-2 text-xs font-black ${group === item ? "bg-[#E30613] text-white" : "bg-slate-100 text-slate-600"}`}>{item}</button>)}</div>
     </section>
 
-    <section className="grid gap-3 md:grid-cols-2">{visible.map((exercise) => { const open = openId === exercise.id; return <article key={exercise.id} className="overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-sm">
-      <button onClick={() => setOpenId(open ? "" : exercise.id)} className="flex w-full items-center justify-between gap-4 p-4 text-left"><div className="flex min-w-0 items-center gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-red-50 text-[#E30613]"><Dumbbell className="size-5" /></span><div className="min-w-0"><p className="truncate font-black text-slate-900">{exercise.name}</p><p className="mt-1 text-xs font-bold text-slate-400">{exercise.muscle_group}{exercise.equipment ? ` · ${exercise.equipment}` : ""}</p></div></div>{open ? <ChevronUp className="size-4 shrink-0 text-slate-400" /> : <ChevronDown className="size-4 shrink-0 text-slate-400" />}</button>
-      {open && <div className="border-t border-slate-100 p-4"><p className="text-sm leading-6 text-slate-600">{exercise.notes || "La explicación breve de este ejercicio se completará más adelante."}</p><div className="mt-4 overflow-hidden rounded-2xl bg-slate-100">{exercise.image_url ? <img src={exercise.image_url} alt={exercise.name} className="max-h-64 w-full object-cover" loading="lazy" /> : <div className="grid min-h-36 place-items-center p-5 text-center text-slate-400"><div><ImageIcon className="mx-auto size-8" /><p className="mt-2 text-xs font-bold">Imagen / GIF pendiente</p></div></div>}</div><div className="mt-3 flex flex-wrap gap-2">{exercise.video_url && <a href={exercise.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Video className="size-3.5" /> Ver video <ExternalLink className="size-3" /></a>}{canEdit(exercise) && <button onClick={() => setEditing(exercise)} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Pencil className="size-3.5" /> Editar</button>}{canEdit(exercise) && !exercise.is_system && <button onClick={() => remove(exercise)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-[#9E0710]"><Trash2 className="size-3.5" /> Eliminar</button>}</div></div>}
+    <section className="grid gap-3 md:grid-cols-2">{shown.map((exercise) => { const open = openId === exercise.id; return <article key={exercise.id} className="overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-sm">
+      <button onClick={() => setOpenId(open ? "" : exercise.id)} className="flex min-h-16 w-full items-center justify-between gap-4 p-4 text-left"><div className="flex min-w-0 items-center gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-red-50 text-[#E30613]"><Dumbbell className="size-5" /></span><div className="min-w-0"><p className="truncate font-black text-slate-900">{exercise.name}</p><p className="mt-1 truncate text-xs font-bold text-slate-400">{exercise.muscle_group}{exercise.equipment ? ` · ${exercise.equipment}` : ""}</p></div></div>{open ? <ChevronUp className="size-4 shrink-0 text-slate-400" /> : <ChevronDown className="size-4 shrink-0 text-slate-400" />}</button>
+      {open && <div className="border-t border-slate-100 p-4"><p className="text-sm leading-6 text-slate-600">{exercise.notes || "La explicación breve de este ejercicio se completará más adelante."}</p><div className="mt-3 rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Referencia</p><p className="mt-1 text-xs font-bold text-slate-600">{exercise.category} · {exercise.default_sets || 3} series · {exercise.default_reps || "8-12"} reps · {exercise.rest_seconds ?? 60}s</p></div><div className="mt-4 overflow-hidden rounded-2xl bg-slate-100">{exercise.image_url ? <img src={exercise.image_url} alt={exercise.name} className="max-h-64 w-full object-cover" loading="lazy" /> : <div className="grid min-h-36 place-items-center p-5 text-center text-slate-400"><div><ImageIcon className="mx-auto size-8" /><p className="mt-2 text-xs font-bold">GIF pendiente</p></div></div>}</div><div className="mt-3 flex flex-wrap gap-2">{exercise.video_url && <a href={exercise.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Video className="size-3.5" /> Ver video <ExternalLink className="size-3" /></a>}{canEdit(exercise) && <button onClick={() => setEditing(exercise)} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"><Pencil className="size-3.5" /> Editar</button>}{canEdit(exercise) && !exercise.is_system && <button onClick={() => remove(exercise)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-[#9E0710]"><Trash2 className="size-3.5" /> Eliminar</button>}</div></div>}
     </article>; })}{!loading && !visible.length && <div className="panel md:col-span-2"><p className="py-8 text-center text-sm text-slate-400">No hay ejercicios para ese filtro.</p></div>}</section>
+
+    {shown.length < visible.length && <button type="button" onClick={() => setVisibleCount((value) => value + PAGE_SIZE)} className="min-h-11 w-full rounded-2xl border border-black/10 bg-white text-sm font-black text-slate-700 shadow-sm">Mostrar más · {visible.length - shown.length} restantes</button>}
 
     <FormDialog open={creating} onOpenChange={setCreating} title="Nuevo ejercicio" description="Se agrega al glosario compartido del gimnasio."><ExerciseForm onSubmit={submitCreate} busy={busy} /></FormDialog>
     <FormDialog open={!!editing} onOpenChange={(value) => { if (!value) setEditing(null); }} title={`Editar ${editing?.name || "ejercicio"}`} description="Actualizá la explicación o el material multimedia."><ExerciseForm exercise={editing} onSubmit={submitEdit} busy={busy} /></FormDialog>

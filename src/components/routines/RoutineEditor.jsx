@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { MUSCLE_GROUPS } from "../../services/exercises";
 
 const input = "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-[#E30613]/20";
+const OPTION_LIMIT = 60;
 
 export default function RoutineEditor({ routine = null, exercises = [], onSave, busy = false, compact = false }) {
   const [title, setTitle] = useState(routine?.title || "");
@@ -14,9 +15,10 @@ export default function RoutineEditor({ routine = null, exercises = [], onSave, 
   const selectedIds = useMemo(() => new Set(items.map((item) => String(item.exercise_id || ""))), [items]);
   const options = useMemo(() => exercises.filter((exercise) => {
     if (group !== "Todos" && exercise.muscle_group !== group) return false;
-    const text = `${exercise.name} ${exercise.muscle_group} ${exercise.equipment || ""}`.toLowerCase();
+    const text = `${exercise.name} ${exercise.muscle_group} ${exercise.category || ""} ${exercise.equipment || ""} ${exercise.notes || ""}`.toLowerCase();
     return text.includes(query.trim().toLowerCase());
   }), [exercises, group, query]);
+  const shownOptions = options.slice(0, OPTION_LIMIT);
 
   const addExercise = (exercise) => {
     if (!exercise || selectedIds.has(String(exercise.id))) return;
@@ -62,7 +64,9 @@ export default function RoutineEditor({ routine = null, exercises = [], onSave, 
 
       <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><button type="button" onClick={() => setGroup("Todos")} className={`shrink-0 rounded-full px-3 py-2 text-[11px] font-black ${group === "Todos" ? "bg-[#050505] text-white" : "bg-white text-slate-500"}`}>Todos</button>{MUSCLE_GROUPS.map((item) => <button key={item} type="button" onClick={() => setGroup(item)} className={`shrink-0 rounded-full px-3 py-2 text-[11px] font-black ${group === item ? "bg-[#050505] text-white" : "bg-white text-slate-500"}`}>{item}</button>)}</div>
 
-      <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-0.5">{options.map((exercise) => { const added = selectedIds.has(String(exercise.id)); return <button key={exercise.id} type="button" onClick={() => addExercise(exercise)} disabled={added} className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${added ? "border-emerald-100 bg-emerald-50" : "border-black/6 bg-white active:scale-[.99]"}`}><div className="min-w-0"><p className="truncate text-sm font-black text-slate-800">{exercise.name}</p><p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{exercise.muscle_group}{exercise.equipment ? ` · ${exercise.equipment}` : ""}</p></div><span className={`grid size-8 shrink-0 place-items-center rounded-xl ${added ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>{added ? <Check className="size-4" /> : <Plus className="size-4" />}</span></button>; })}{!options.length && <p className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-400">No hay ejercicios para este filtro.</p>}</div>
+      <div className="mt-3 flex items-center justify-between gap-3"><p className="text-[10px] font-black text-slate-400">{options.length} coincidencia{options.length === 1 ? "" : "s"}</p>{options.length > OPTION_LIMIT && <p className="text-right text-[10px] font-bold text-slate-400">Mostrando {OPTION_LIMIT}. Buscá o filtrá para acotar.</p>}</div>
+
+      <div className="mt-2 max-h-64 space-y-2 overflow-y-auto pr-0.5">{shownOptions.map((exercise) => { const added = selectedIds.has(String(exercise.id)); return <button key={exercise.id} type="button" onClick={() => addExercise(exercise)} disabled={added} className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${added ? "border-emerald-100 bg-emerald-50" : "border-black/6 bg-white active:scale-[.99]"}`}><div className="min-w-0"><p className="truncate text-sm font-black text-slate-800">{exercise.name}</p><p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{exercise.muscle_group}{exercise.equipment ? ` · ${exercise.equipment}` : ""}</p></div><span className={`grid size-8 shrink-0 place-items-center rounded-xl ${added ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>{added ? <Check className="size-4" /> : <Plus className="size-4" />}</span></button>; })}{!options.length && <p className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-400">No hay ejercicios para este filtro.</p>}</div>
     </section>
 
     <section>

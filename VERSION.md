@@ -1,4 +1,18 @@
-# V.1.06
+# V.1.061
+
+Biblioteca masiva de ejercicios clasificada y optimizada para móvil.
+
+- Importa las 1.336 referencias de la biblioteca proporcionada y conserva sus identificadores originales para asociar GIFs más adelante.
+- Las referencias duplicadas se consolidan en ejercicios canónicos sin perder los códigos de origen.
+- Clasifica los ejercicios por Pecho, Espalda, Hombros, Bíceps, Tríceps, Antebrazos, Core, Glúteos, Cuádriceps, Isquiotibiales, Gemelos, Cadera, Cuello, Cuerpo completo, Cardio y Movilidad.
+- Cada ejercicio incorpora una explicación breve de ejecución generada según el movimiento y grupo muscular.
+- El buscador incluye nombre, músculo, categoría, equipamiento, descripción y código de biblioteca.
+- Profesor, Cliente y Admin usan la misma biblioteca completa.
+- El glosario muestra resultados de forma progresiva para evitar renderizar más de mil tarjetas simultáneamente en iOS/Android.
+- El constructor de rutinas busca sobre toda la biblioteca y limita los resultados visibles para mantener una interacción fluida.
+- `image_url` continúa preparado para enlazar los GIFs cuando se defina su alojamiento.
+
+## V.1.06
 
 Interfaces móviles completas para Profesor y Cliente + seguimiento corporal + permisos de acceso por profesor.
 
