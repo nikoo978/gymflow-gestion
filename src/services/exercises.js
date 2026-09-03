@@ -1,13 +1,13 @@
 import { supabase } from "./supabase";
 
-export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Piernas", "Glúteos", "Hombros", "Bíceps", "Tríceps", "Core", "Cardio", "Movilidad", "Otro"];
+export const MUSCLE_GROUPS = ["Pecho", "Espalda", "Hombros", "Bíceps", "Tríceps", "Antebrazos", "Core", "Glúteos", "Cuádriceps", "Isquiotibiales", "Gemelos", "Cadera", "Cuello", "Cuerpo completo", "Cardio", "Movilidad"];
 export const EXERCISE_CATEGORIES = ["Fuerza", "Hipertrofia", "Técnica", "Cardio", "Movilidad"];
 
 export async function listExercises() {
   if (!supabase) return { exercises: [], error: new Error("Supabase no configurado") };
   const { data, error } = await supabase
     .from("gf_exercises")
-    .select("id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at")
+    .select("id,name,muscle_group,category,equipment,image_url,video_url,default_sets,default_reps,rest_seconds,notes,is_system,created_by,created_at,updated_at,library_codes")
     .order("muscle_group", { ascending: true })
     .order("name", { ascending: true });
   return { exercises: data || [], error };
