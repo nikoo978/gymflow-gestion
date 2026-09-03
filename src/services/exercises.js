@@ -44,6 +44,25 @@ function withAliases(exercise) {
   return { ...enriched, search_index: buildExerciseSearchIndex(enriched) };
 }
 
+function markVariants(exercises) {
+  const counts = new Map();
+  exercises.forEach((exercise) => {
+    if (!exercise?.is_system) return;
+    const key = `${normalizeExerciseSearch(exercise.name)}|${normalizeExerciseSearch(exercise.muscle_group)}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  return exercises.map((exercise) => {
+    const libraryCode = Number(exercise?.library_codes?.[0] || 0) || null;
+    const key = `${normalizeExerciseSearch(exercise.name)}|${normalizeExerciseSearch(exercise.muscle_group)}`;
+    return {
+      ...exercise,
+      library_code: libraryCode,
+      has_variants: Boolean(exercise?.is_system && libraryCode && (counts.get(key) || 0) > 1),
+    };
+  });
+}
+
 export async function listExercises() {
   if (!supabase) return { exercises: [], error: new Error("Supabase no configurado") };
 
@@ -66,7 +85,7 @@ export async function listExercises() {
     from += EXERCISE_PAGE_SIZE;
   }
 
-  return { exercises, error: null };
+  return { exercises: markVariants(exercises), error: null };
 }
 
 export async function createExercise(payload) {
