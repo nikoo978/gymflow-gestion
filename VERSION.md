@@ -1,4 +1,15 @@
-# V.1.064
+# V.1.065
+
+Nombres de ejercicios adaptados a Argentina con alias y nombre original como referencias secundarias.
+
+- Usa exactamente el archivo `ID; nombre más común en Argentina; alias; nombre original` como fuente de nomenclatura para las 1.336 variantes.
+- El nombre más común en Argentina pasa a ser el único título principal visible en glosario, PWA y constructor de rutinas.
+- Los alias y el nombre original se muestran al abrir el ejercicio, inmediatamente debajo de la explicación breve.
+- El ID de la variante queda disponible de forma discreta dentro del mismo bloque informativo para distinguir GIFs cuando dos variantes comparten nombre.
+- El buscador de Admin, Profesor, Cliente y constructor de rutinas indexa nombre argentino, todos los alias, nombre original, músculo, equipamiento, descripción e ID.
+- Las rutinas existentes muestran el nombre argentino actual cuando el ejercicio sigue vinculado por ID y lo actualizan al volver a guardarse.
+
+## V.1.064
 
 Variantes de ejercicios separadas por ID.
 
