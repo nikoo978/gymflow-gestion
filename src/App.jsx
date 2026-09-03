@@ -1,13 +1,13 @@
 "use client";
 
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { BarChart3, BellRing, Building2, CircleDollarSign, Dumbbell, Eye, Fingerprint, LayoutDashboard, ShieldCheck, UserCog, UsersRound } from "lucide-react";
+import { Activity, BarChart3, BellRing, Building2, CircleDollarSign, Dumbbell, Eye, Fingerprint, LayoutDashboard, Settings2, ShieldCheck, UserCog, UsersRound } from "lucide-react";
 import AppLayout from "./components/layout/AppLayout";
 import ProfessorLayout from "./components/layout/ProfessorLayout";
 import Accesos from "./pages/Accesos";
 import AccessDisplay from "./pages/AccessDisplay";
 import Caja from "./pages/Caja";
-import ClientHome from "./pages/ClientHome";
+import ClientHomeV106 from "./pages/ClientHomeV106";
 import Clientes from "./pages/Clientes";
 import Dashboard from "./pages/Dashboard";
 import Exercises from "./pages/Exercises";
@@ -15,17 +15,20 @@ import InterfacePreview from "./pages/InterfacePreview";
 import Notificaciones from "./pages/Notificaciones";
 import Personal from "./pages/Personal";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
+import ProfessorPermissions from "./pages/ProfessorPermissions";
+import ProfessorProgress from "./pages/ProfessorProgress";
 import Reportes from "./pages/Reportes";
 import Routines from "./pages/Routines";
 import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 
-export const APP_VERSION = "V.1.051";
+export const APP_VERSION = "V.1.06";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },
   { label: "Personal", path: "/personal", icon: UserCog, roles: ["admin", "coadmin"] },
   { label: "Usuarios", path: "/usuarios", icon: ShieldCheck, roles: ["admin", "coadmin"] },
+  { label: "Permisos", path: "/permisos", icon: Settings2, roles: ["admin"] },
   { label: "Ejercicios", path: "/ejercicios", icon: Dumbbell, roles: ["admin", "coadmin"] },
   { label: "Caja", path: "/caja", icon: CircleDollarSign, roles: ["admin", "coadmin"] },
   { label: "Reportes", path: "/reportes", icon: BarChart3, roles: ["admin", "coadmin"] },
@@ -42,9 +45,9 @@ function ProfessorApp({ currentPath }) {
       <Routes>
         <Route path="/" element={<ProfessorDashboard />} />
         <Route path="/clientes" element={<Clientes />} />
+        <Route path="/progreso" element={<ProfessorProgress />} />
         <Route path="/ejercicios" element={<Exercises />} />
         <Route path="/rutinas" element={<Routines />} />
-        <Route path="/accesos" element={<Accesos />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ProfessorLayout>
@@ -56,7 +59,7 @@ export default function App() {
   const { role } = useAuth();
 
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
-  if (role === "cliente") return <ClientHome />;
+  if (role === "cliente") return <ClientHomeV106 />;
   if (role === "profe") return <ProfessorApp currentPath={location.pathname} />;
 
   const allowed = (path) => navigation.find((item) => item.path === path)?.roles.includes(role);
@@ -69,6 +72,7 @@ export default function App() {
         <Route path="/clientes" element={allowed("/clientes") ? <Clientes /> : <Navigate to={fallback} replace />} />
         <Route path="/personal" element={allowed("/personal") ? <Personal /> : <Navigate to={fallback} replace />} />
         <Route path="/usuarios" element={allowed("/usuarios") ? <Usuarios /> : <Navigate to={fallback} replace />} />
+        <Route path="/permisos" element={allowed("/permisos") ? <ProfessorPermissions /> : <Navigate to={fallback} replace />} />
         <Route path="/ejercicios" element={allowed("/ejercicios") ? <Exercises /> : <Navigate to={fallback} replace />} />
         <Route path="/caja" element={allowed("/caja") ? <Caja /> : <Navigate to={fallback} replace />} />
         <Route path="/reportes" element={allowed("/reportes") ? <Reportes /> : <Navigate to={fallback} replace />} />
