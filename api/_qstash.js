@@ -25,7 +25,7 @@ export async function publishAt(payload, finalAtMs) {
   const qstashPayload = isRelay ? { kind: "relay", finalAt, payload } : payload;
   const target = `${appUrl()}/api/notify`;
 
-  const response = await fetch(`${qstashUrl()}/v2/publish/${encodeURIComponent(target)}`, {
+  const response = await fetch(`${qstashUrl()}/v2/publish/${target}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
