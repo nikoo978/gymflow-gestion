@@ -18,10 +18,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-COPY --from=build /app/dist ./dist
-COPY api ./api
-COPY server ./server
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node api ./api
+COPY --chown=node:node server ./server
 
+USER node
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
