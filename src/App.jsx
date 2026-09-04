@@ -24,7 +24,7 @@ import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 import "./styles/v1066-admin-menu.css";
 
-export const APP_VERSION = "V.1.068";
+export const APP_VERSION = "V.1.069";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },
@@ -58,11 +58,12 @@ function ProfessorApp({ currentPath }) {
 
 export default function App() {
   const location = useLocation();
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
 
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
   if (location.pathname === "/preview-profesor-mobile") {
-    return role === "admin" || role === "coadmin" ? <ProfessorMobilePreview /> : <Navigate to="/" replace />;
+    if (!profile?.role) return <div className="min-h-dvh bg-[#F5F5F5]" />;
+    return profile.role === "admin" || profile.role === "coadmin" ? <ProfessorMobilePreview /> : <Navigate to="/" replace />;
   }
   if (role === "cliente") return <ClientHomeV106 />;
   if (role === "profe") return <ProfessorApp currentPath={location.pathname} />;

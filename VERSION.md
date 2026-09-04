@@ -1,4 +1,15 @@
-# V.1.068
+# V.1.069
+
+Registro Cliente automático por DNI + corrección del preview móvil de Profesor.
+
+- Las nuevas cuentas normales continúan creándose directamente con rol `cliente`; el Admin no necesita seleccionar ese rol.
+- Si el DNI registrado coincide con una única ficha `Cliente` existente y esa ficha todavía no está vinculada, Supabase crea automáticamente el vínculo de cuenta al momento del alta.
+- Si no existe una coincidencia única o la ficha ya está ocupada, la cuenta se conserva como Cliente sin crear un vínculo ambiguo; la vinculación manual sigue disponible como respaldo administrativo.
+- La coincidencia automática sólo considera fichas con rol `Cliente` y mantiene la unicidad existente de DNI/cuenta.
+- Se corrige la carrera de inicialización de Auth en `/preview-profesor-mobile`: la ruta espera el perfil real de Admin/Coadmin antes de autorizar o redirigir, evitando que el iframe termine mostrando el Dashboard Admin.
+- La vista previa de Profesor vuelve a cargar su interfaz móvil real con navegación inferior, encabezado compacto y modo de solo lectura.
+
+## V.1.068
 
 Vista previa de Profesor en viewport móvil real.
 
