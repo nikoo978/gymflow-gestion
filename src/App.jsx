@@ -15,6 +15,7 @@ import InterfacePreview from "./pages/InterfacePreview";
 import Notificaciones from "./pages/Notificaciones";
 import Personal from "./pages/Personal";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
+import ProfessorMobilePreview from "./pages/ProfessorMobilePreview";
 import ProfessorPermissions from "./pages/ProfessorPermissions";
 import ProfessorProgress from "./pages/ProfessorProgress";
 import Reportes from "./pages/Reportes";
@@ -23,7 +24,7 @@ import Usuarios from "./pages/Usuarios";
 import { useAuth } from "./context/AuthContext";
 import "./styles/v1066-admin-menu.css";
 
-export const APP_VERSION = "V.1.067";
+export const APP_VERSION = "V.1.068";
 export const navigation = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["admin", "coadmin"] },
   { label: "Clientes", path: "/clientes", icon: UsersRound, roles: ["admin", "coadmin"] },
@@ -60,6 +61,9 @@ export default function App() {
   const { role } = useAuth();
 
   if (location.pathname === "/pantalla-acceso") return <AccessDisplay />;
+  if (location.pathname === "/preview-profesor-mobile") {
+    return role === "admin" || role === "coadmin" ? <ProfessorMobilePreview /> : <Navigate to="/" replace />;
+  }
   if (role === "cliente") return <ClientHomeV106 />;
   if (role === "profe") return <ProfessorApp currentPath={location.pathname} />;
 

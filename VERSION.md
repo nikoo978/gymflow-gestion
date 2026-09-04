@@ -1,4 +1,14 @@
-# V.1.067
+# V.1.068
+
+Vista previa de Profesor en viewport móvil real.
+
+- La vista previa de Profesor ahora se renderiza dentro de un viewport móvil aislado, igual que la experiencia de Cliente, incluso cuando el Admin entra desde una PC o netbook.
+- Al simular un ancho móvil real, los breakpoints responsive del Profesor usan navegación inferior, encabezado compacto y distribución de celular en lugar de adaptar el diseño al ancho del monitor del Admin.
+- Inicio, Alumnos, Progreso, Ejercicios y Rutinas siguen siendo navegables dentro de la vista previa sin cambiar el rol real del Admin/Coadmin.
+- La ruta interna de simulación móvil sólo puede abrirse con rol Admin/Coadmin y mantiene bloqueadas las acciones sensibles de Profesor durante el preview.
+- La X superior continúa cerrando la simulación y devolviendo al panel de administración.
+
+## V.1.067
 
 Ejercicios únicos con múltiples GIFs de variantes dentro del mismo detalle.
 
