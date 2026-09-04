@@ -1,33 +1,65 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-test("renders the branded application shell", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+import { createAppServer } from "../server/index.js";
 
-  const response = await worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+async function withServer(run) {
+  const server = createAppServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
 
-  assert.equal(response.status, 200);
-  assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
-  );
-  const html = await response.text();
-  assert.match(html, /<title>Infytter Fitness - Gestión de Gimnasio<\/title>/i);
-  assert.match(html, /aria-label="Cargando aplicación"/i);
-  assert.doesNotMatch(html, /codex-preview/i);
+  const address = server.address();
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  try {
+    await run(baseUrl);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+}
+
+test("serves the branded Vite shell and SPA routes", async () => {
+  await withServer(async (baseUrl) => {
+    for (const pathname of ["/", "/pantalla-acceso"]) {
+      const response = await fetch(`${baseUrl}${pathname}`, { headers: { accept: "text/html" } });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+      const html = await response.text();
+      assert.match(html, /<title>Infytter Fitness - Gestión de Gimnasio<\/title>/i);
+      assert.match(html, /<div id="root"><\/div>/i);
+      assert.match(html, /\/assets\/.+\.js/i);
+      assert.doesNotMatch(html, /codex-preview/i);
+    }
+  });
+});
+
+test("serves the portable health endpoint", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/health`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
+    assert.deepEqual(await response.json(), { ok: true, service: "gymflow" });
+  });
+});
+
+test("adapts API query parameters for Push diagnostics", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/push?action=diagnostics`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.action, "diagnostics");
+    assert.equal(body.runtime, "node");
+    assert.equal(body.configured.publicAppUrl, false);
+  });
+});
+
+test("returns a JSON 404 for unknown API routes", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/not-a-route`);
+    assert.equal(response.status, 404);
+    assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/i);
+    assert.deepEqual(await response.json(), { error: "API no encontrada" });
+  });
 });
