@@ -2,11 +2,12 @@ const RELAY_MS = 6 * 24 * 60 * 60 * 1000;
 
 function appUrl() {
   const configured = String(process.env.PUBLIC_APP_URL || "").trim();
-  const production = String(process.env.VERCEL_PROJECT_PRODUCTION_URL || "").trim();
-  const preview = String(process.env.VERCEL_URL || "").trim();
-  const url = configured || (production ? `https://${production}` : preview ? `https://${preview}` : "");
-  if (!url) throw Object.assign(new Error("PUBLIC_APP_URL no configurada"), { statusCode: 503 });
-  return url.replace(/\/$/, "");
+  if (!configured) throw Object.assign(new Error("PUBLIC_APP_URL no configurada"), { statusCode: 503 });
+  return configured.replace(/\/$/, "");
+}
+
+function qstashUrl() {
+  return String(process.env.QSTASH_URL || "https://qstash.upstash.io").trim().replace(/\/$/, "");
 }
 
 export async function publishAt(payload, finalAtMs) {
@@ -24,7 +25,7 @@ export async function publishAt(payload, finalAtMs) {
   const qstashPayload = isRelay ? { kind: "relay", finalAt, payload } : payload;
   const target = `${appUrl()}/api/notify`;
 
-  const response = await fetch(`https://qstash.upstash.io/v2/publish/${encodeURIComponent(target)}`, {
+  const response = await fetch(`${qstashUrl()}/v2/publish/${target}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

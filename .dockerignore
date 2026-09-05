@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+vercel-dist
+.next
+.wrangler
+.openai
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.log

@@ -65,6 +65,12 @@ export default function App() {
     if (!profile?.role) return <div className="min-h-dvh bg-[#F5F5F5]" />;
     return profile.role === "admin" || profile.role === "coadmin" ? <ProfessorMobilePreview /> : <Navigate to="/" replace />;
   }
+
+  // No asumir "cliente" durante el breve lapso entre restaurar la sesión y
+  // cargar el perfil real. Evita ejecutar RPC exclusivas de Cliente desde una
+  // cuenta Admin/Profesor durante el arranque.
+  if (!profile?.role) return <div className="min-h-dvh bg-[#F5F5F5]" />;
+
   if (role === "cliente") return <ClientHomeV106 />;
   if (role === "profe") return <ProfessorApp currentPath={location.pathname} />;
 
