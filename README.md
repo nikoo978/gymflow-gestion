@@ -1,6 +1,8 @@
-# GymFlow / Infytter Fitness · V.1.067
+# GymFlow / Infytter Fitness · V1.069
 
-PWA de gestión para Infytter Fitness con interfaces separadas para Admin/Coadmin, Profesor y Cliente, sincronización Cloud mediante Supabase y despliegue en Vercel.
+PWA de gestión para Infytter Fitness con interfaces separadas para Admin/Coadmin, Profesor y Cliente, sincronización cloud mediante Supabase y despliegue self-hosted con Docker + Coolify.
+
+Producción: `https://gymflow.coffetec.com.ar`
 
 ## Interfaces
 
@@ -36,8 +38,12 @@ La segunda pantalla de accesos se sincroniza entre dispositivos mediante Supabas
 ## Plataforma
 
 - React 19 + Vite
-- Supabase Auth / PostgreSQL / Realtime
-- Vercel
-- PWA y operación local de emergencia para Admin Master
+- Node.js 24
+- Docker + Coolify
+- Cloudflare Tunnel + HTTPS público
+- Supabase Auth / PostgreSQL / Realtime gestionado
+- Upstash Redis + QStash
+- Cloudinary
+- Web Push / PWA
 
 El historial detallado de cambios está en `VERSION.md`.
